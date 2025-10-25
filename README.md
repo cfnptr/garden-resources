@@ -1,2 +1,1 @@
-# garden-resources
-Garden game engine resources (shaders, images, models, fonts, configs, etc.)
+# [Garden](https://github.com/cfnptr/garden) game engine resources
