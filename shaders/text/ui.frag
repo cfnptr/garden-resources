@@ -30,8 +30,14 @@ uniform sampler2D
 	filter = linear;
 } fontAtlas;
 
+uniform pushConstants
+{
+	float4x4 mvp;
+	float4 color;
+} pc;
+
 void main()
 {
 	float alpha = texture(fontAtlas, fs.texCoords)[fs.atlasIndex];
-	fb.color = float4(fs.color.rgb, fs.color.a * alpha);
+	fb.color = float4(fs.color.rgb, fs.color.a * alpha) * pc.color;
 }

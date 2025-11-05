@@ -22,6 +22,7 @@ out flat uint32 fs.atlasIndex;
 uniform pushConstants
 {
 	float4x4 mvp;
+	float4 color;
 } pc;
 
 buffer readonly Instance
