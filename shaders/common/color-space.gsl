@@ -15,16 +15,8 @@
 #ifndef COLOR_SPACE_GSL
 #define COLOR_SPACE_GSL
 
-uint32 encodeRgba(float4 rgba)
-{
-	uint4 d = uint4(fma(rgba, float4(255.0f), float4(0.5f))) & 255u;
-	return (d.r << 24u) | (d.g << 16u) | (d.b << 8u) | d.a;
-}
-float4 decodeRgba(uint32 rgba)
-{
-	uint4 d = uint4(rgba >> 24u, rgba >> 16u, rgba >> 8u, rgba);
-	return float4(d & 255u) * (1.0f / 255.0f);
-}
+byte4 encodeRgba(float4 rgba) { return byte4(fma(rgba, float4(255.0f), float4(0.5f))); }
+float4 decodeRgba(byte4 rgba) { return float4(rgba) * (1.0f / 255.0f); }
 
 float3 rgbToSrgb(float3 rgb)
 {
@@ -41,8 +33,8 @@ float3 srgbToRgb(float3 sRGB)
 
 float4 rgbToSrgb(float4 rgba) { return float4(rgbToSrgb(rgba.rgb), rgba.a); };
 float4 srgbToRgb(float4 sRGB) { return float4(srgbToRgb(sRGB.rgb), sRGB.a); };
-float4 rgbToSrgb(uint32 rgba) { return rgbToSrgb(decodeRgba(rgba)); };
-float4 srgbToRgb(uint32 sRGB) { return srgbToRgb(decodeRgba(sRGB)); };
+float4 rgbToSrgb(byte4 rgba) { return rgbToSrgb(decodeRgba(rgba)); };
+float4 srgbToRgb(byte4 sRGB) { return srgbToRgb(decodeRgba(sRGB)); };
 
 float3 rgbToXyz(float3 rgb)
 {

@@ -23,10 +23,11 @@
 #define SHADOW_MAP_MAX_CASCADE_COUNT 4
 #define SHADOW_MAP_SAMPLE_COUNT 8
 
-#define SHADOW_MAP_DATA                              \
-	float4x4 uvToLight[SHADOW_MAP_CASCADE_COUNT];    \
-	float4 farPlanes;                                \
-	float4 sunDirBias;
+#define SHADOW_MAP_DATA                           \
+	float4x4 uvToLight[SHADOW_MAP_CASCADE_COUNT]; \
+	float4 farPlanes;                             \
+	float3 sunDir;                                \
+	float normBias;                               \
 
 const float2 poissonDisk[SHADOW_MAP_SAMPLE_COUNT] = float2[]
 (

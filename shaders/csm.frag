@@ -56,7 +56,7 @@ void main()
 	float3 normal = decodeNormal(textureLod(gNormals, fs.texCoords, 0.0f));
 	uint32 cascadeID; float3 lightCoords;
 	computeCsmData(shadowData.uvToLight, fs.texCoords, pixelDepth, shadowData.farPlanes.xyz, 
-		shadowData.sunDirBias.xyz, shadowData.sunDirBias.w, normal, cascadeID, lightCoords);
+		shadowData.sunDir, shadowData.normBias, normal, cascadeID, lightCoords);
 	float shadow = evaluateCsmShadow(depthMap, cascadeID, lightCoords);
 
 	float4 transparency = evaluateCsmTransparency(transparentMap, cascadeID, lightCoords);

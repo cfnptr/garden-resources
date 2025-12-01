@@ -23,22 +23,22 @@
 	float4x4 inverseProj;    \
 	float4x4 invViewProj;    \
 	float4x4 prevViewProj;   \
-	float4 cameraPos;        \
-	float4 giBufferPos;      \
-	float4 viewDir;          \
-	float4 lightDir;         \
 	float4 shadowColor;      \
-	float4 skyColor;         \
+	float3 cameraPos;        \
+	float nearPlane;         \
+	float3 giBufferPos;      \
+	float currentTime;       \
+	float3 viewDir;          \
+	float deltaTime;         \
+	float3 lightDir;         \
+	float emissiveCoeff;     \
+	float3 skyColor;         \
+	float anglePerPixel;     \
 	float2 frameSize;        \
 	float2 invFrameSize;     \
 	float2 invFrameSizeSq;   \
 	float2 jitterOffset;     \
 	float2 prevJitterOffset; \
-	float nearPlane;         \
-	float currentTime;       \
-	float deltaTime;         \
-	float emissiveCoeff;     \
-	float anglePerPixel;     \
 	float mipLodBias;        \
 	float ggxLodOffset;
 
