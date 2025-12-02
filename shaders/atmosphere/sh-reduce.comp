@@ -16,7 +16,7 @@
 
 localSize = 64, 1, 1;
 
-buffer restrict ShCache
+buffer restrict std430 ShCache
 {
 	volatile uint32 counter;
 	float4 cache[];

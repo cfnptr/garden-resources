@@ -18,7 +18,7 @@ localSize = 8, 8, 1;
 
 uniform sampler2DArray skybox;
 
-buffer restrict ShCache
+buffer restrict std430 ShCache
 {
 	volatile uint32 counter;
 	float4 cache[];
