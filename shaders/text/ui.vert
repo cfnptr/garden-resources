@@ -33,9 +33,9 @@ buffer readonly Instance
 void main()
 {
 	InstanceData instance = instance.data[gl.instanceIndex];
-	float4 position = instance.position * textVertMuls[gl.vertexIndex];
+	float4 position = instance.position * textVertPosMuls[gl.vertexIndex];
 	gl.position = pc.mvp * float4(position.xy + position.zw, 0.0f, 1.0f);
-	float4 texCoords = instance.texCoords * textTexMuls[gl.vertexIndex];
+	float4 texCoords = instance.texCoords * textTexCoordMuls[gl.vertexIndex];
 	fs.texCoords = texCoords.xy + texCoords.zw;
 	fs.color = srgbToRgb(instance.srgbColor);
 	fs.atlasIndex = instance.atlasIndex;

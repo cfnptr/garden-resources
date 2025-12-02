@@ -25,12 +25,12 @@ struct InstanceData
 	uint32 _alignment1;
 };
 
-const float4 textVertMuls[6] = float4[]
+const float4 textVertPosMuls[6] = float4[]
 (
 	float4(1.0f, 1.0f, 0.0f, 0.0f), float4(0.0f, 1.0f, 1.0f, 0.0f), float4(1.0f, 0.0f, 0.0f, 1.0f),
 	float4(1.0f, 0.0f, 0.0f, 1.0f), float4(0.0f, 1.0f, 1.0f, 0.0f), float4(0.0f, 0.0f, 1.0f, 1.0f)
 );
-const float4 textTexMuls[6] = float4[]
+const float4 textTexCoordMuls[6] = float4[]
 (
 	float4(1.0f, 0.0f, 0.0f, 1.0f), float4(0.0f, 0.0f, 1.0f, 1.0f), float4(1.0f, 1.0f, 0.0f, 0.0f),
 	float4(1.0f, 1.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 1.0f, 1.0f), float4(0.0f, 1.0f, 1.0f, 0.0f)
