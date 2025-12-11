@@ -74,9 +74,9 @@ uniform pushConstants
 {
 	float4x4 uvToWorld;
 	float4 shadowColor;
-	float ggxLodOffset;
 	float emissiveCoeff;
 	float reflectanceCoeff;
+	float ggxLodOffset;
 } pc;
 
 //**********************************************************************************************************************

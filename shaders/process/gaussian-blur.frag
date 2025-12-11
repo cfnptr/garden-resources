@@ -16,6 +16,7 @@
 #include "process/gaussian-blur.h"
 
 #variantCount 2
+spec const uint32 COEFF_COUNT = 0;
 
 pipelineState
 {
@@ -37,7 +38,7 @@ buffer restrict readonly KernelBuffer
 uniform pushConstants
 {
 	float2 texelSize;
-	uint32 count;
+	float intensity;
 } pc;
 
 void sampleReinhard(inout float4 sum, inout float weight, float k, float2 texCoords)
@@ -58,12 +59,12 @@ void main()
 		sum = float4(0.0f); float weight = 0.0;
 		sampleReinhard(sum, weight, kernel.coeffs[0].x, fs.texCoords);
 
-		for (int32 i = 1; i < pc.count; i++, offset += texelSize2)
+		for (uint32 i = 1; i < COEFF_COUNT; i++, offset += texelSize2)
 		{
-			float k = kernel.coeffs[i].x;
-			float2 o = fma(pc.texelSize, float2(kernel.coeffs[i].y), offset);
-			sampleReinhard(sum, weight, k, fs.texCoords + o);
-			sampleReinhard(sum, weight, k, fs.texCoords - o);
+			float k = kernel.coeffs[i].x; float o = kernel.coeffs[i].y * pc.intensity;
+			float2 texOffset = fma(pc.texelSize, float2(o), offset);
+			sampleReinhard(sum, weight, k, fs.texCoords + texOffset);
+			sampleReinhard(sum, weight, k, fs.texCoords - texOffset);
 		}
 		sum /= weight;
 	}
@@ -71,12 +72,12 @@ void main()
 	{
 		sum = textureLod(srcBuffer, fs.texCoords, 0.0f) * kernel.coeffs[0].x;
 
-		for (int32 i = 1; i < pc.count; i++, offset += texelSize2)
+		for (uint32 i = 1; i < COEFF_COUNT; i++, offset += texelSize2)
 		{
-			float k = kernel.coeffs[i].x;
-			float2 o = fma(pc.texelSize, float2(kernel.coeffs[i].y), offset);
-			sum += textureLod(srcBuffer, fs.texCoords + o, 0.0f) * k;
-			sum += textureLod(srcBuffer, fs.texCoords - o, 0.0f) * k;
+			float k = kernel.coeffs[i].x; float o = kernel.coeffs[i].y * pc.intensity;
+			float2 texOffset = fma(pc.texelSize, float2(o), offset);
+			sum += textureLod(srcBuffer, fs.texCoords + texOffset, 0.0f) * k;
+			sum += textureLod(srcBuffer, fs.texCoords - texOffset, 0.0f) * k;
 		}
 	}
 	fb.data = sum;
