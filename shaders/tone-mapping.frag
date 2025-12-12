@@ -13,10 +13,14 @@
 // limitations under the License.
 
 #include "tone-mapping/functions.h"
-spec const bool USE_BLOOM_BUFFER = true;
-spec const uint32 TONE_MAPPER = TONE_MAPPER_ACES;
 
+spec const uint32 TONE_MAPPER = TONE_MAPPER_ACES;
+spec const bool USE_BLOOM_BUFFER = true;
+spec const bool USE_LIGHT_ABSORPTION = true;
+
+#include "common/depth.gsl"
 #include "common/random.gsl"
+#include "common/constants.gsl"
 #include "common/color-space.gsl"
 #include "common/tone-mapping.gsl"
 
@@ -31,6 +35,8 @@ uniform pushConstants
 	float exposureFactor;
 	float ditherIntensity;
 	float bloomIntensity;
+	float3 absorptionColor;
+	float nearPlane;
 } pc;
 
 uniform Luminance
@@ -39,8 +45,17 @@ uniform Luminance
 	float exposure;
 } luminance;
 
+uniform CommonConstants
+{
+	COMMON_CONSTANTS
+} cc;
+
 uniform sampler2D hdrBuffer;
 
+uniform sampler2D
+{
+	filter = linear;
+} depthBuffer;
 uniform sampler2D
 {
 	filter = linear;
@@ -58,6 +73,12 @@ void main()
 	{
 		float3 bloomColor = min(textureLod(bloomBuffer, fs.texCoords, 0.0f).rgb, 65500.0f); // r11b11b10
 		hdrColor = mix(hdrColor, bloomColor, pc.bloomIntensity);
+	}
+	if (USE_LIGHT_ABSORPTION && dot(pc.absorptionColor, pc.absorptionColor) > 0.0f)
+	{
+		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+		float3 worldPos = calcWorldPosition(depth, fs.texCoords, cc.invViewProj);
+		hdrColor *= exp(pc.absorptionColor * length(worldPos));
 	}
 
 	// TODO: lens dirt? bloomColor + bloomColor * dirtColor * dirtIntensity
