@@ -36,7 +36,6 @@ uniform pushConstants
 	float ditherIntensity;
 	float bloomIntensity;
 	float3 absorptionColor;
-	float nearPlane;
 } pc;
 
 uniform Luminance
