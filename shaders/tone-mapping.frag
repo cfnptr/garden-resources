@@ -91,8 +91,7 @@ void main()
 		tonemappedColor = aces(hdrColor);
 	else
 		tonemappedColor = uchimura(hdrColor);
-
-	float3 ldrColor = gammaCorrectionPrecise(tonemappedColor); // TODO: set precise or not via spec const?
+	float3 ldrColor = gammaCorrectionPrecise(tonemappedColor);
 
 	float random = toFloat01(pcg(uint3(gl.fragCoord.xy, pc.frameIndex)).x);
 	ldrColor += mix(-pc.ditherIntensity, pc.ditherIntensity, random);

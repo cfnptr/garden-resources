@@ -67,7 +67,7 @@ uniform set1 samplerCube
 } specular;
 uniform set1 IblData
 {
-	float4 data[SH_COEFF_COUNT];
+	half4 data[SH_COEFF_COUNT];
 } sh;
 
 uniform pushConstants

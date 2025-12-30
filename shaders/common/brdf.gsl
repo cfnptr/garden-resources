@@ -72,11 +72,11 @@ float3 importanceSamplingNdfDggx(float2 u, float a)
 
 float computeDielectricF0(float reflectance)
 {
-	return 0.16f * reflectance * reflectance;
+	return reflectance * reflectance * 0.16f;
 }
 float3 computeF0(float3 baseColor, float metallic, float reflectance)
 {
-	return baseColor * metallic + reflectance * (1.0f - metallic);
+	return mix(float3(reflectance), baseColor, float3(metallic));
 }
 float3 computeDiffuseColor(float3 baseColor, float metallic)
 {
@@ -95,8 +95,8 @@ float3 specularDFG(sampler2D dfgLUT, float nov, float perceptualRoughness, float
 
 float3 computeEnergyCompensation(sampler2D dfgLUT, float nov, float perceptualRoughness, float3 f0)
 {
-	float2 dfg = sampleDFG(dfgLUT, nov, perceptualRoughness);
-	return fma(float3(1.0f / dfg.y - 1.0f), f0, float3(1.0f));
+	float dfgY = sampleDFG(dfgLUT, nov, perceptualRoughness).y;
+	return fma(float3(1.0f / dfgY - 1.0f), f0, float3(1.0f));
 }
 
 float specularAoLagarde(float nov, float visibility, float linearRoughness)
@@ -105,10 +105,11 @@ float specularAoLagarde(float nov, float visibility, float linearRoughness)
 }
 float3 gtaoMultiBounce(float visibility, float3 albedo)
 {
+	float3 v = float3(visibility);
 	float3 a = fma(albedo, float3( 2.0404f), float3(-0.3324f));
 	float3 b = fma(albedo, float3(-4.7951f), float3( 0.6417f));
 	float3 c = fma(albedo, float3( 2.7552f), float3( 0.6903f));
-	return max(float3(visibility), ((visibility * a + b) * visibility + c) * visibility);
+	return max(v, fma(fma(a, v, b), v, c) * v);
 }
 
 float3 computeReflectedVector(float linearRoughness, float3 normal, float3 reflected)
@@ -117,7 +118,7 @@ float3 computeReflectedVector(float linearRoughness, float3 normal, float3 refle
 }
 
 //**********************************************************************************************************************
-float iblRoughnessOneLevel(samplerCube iblSpecular)
+int32 iblRoughnessOneLevel(samplerCube iblSpecular)
 {
 	return textureQueryLevels(iblSpecular) - 1;
 }
@@ -126,7 +127,7 @@ float perceptualRoughnessToLod(samplerCube iblSpecular, float perceptualRoughnes
 	// The mapping below is a quadratic fit for log2(perceptualRoughness) + iblRoughnessOneLevel when
 	// iblRoughnessOneLevel is 4. We found empirically that this mapping works very well for
 	// a 256 cubemap with 5 levels used. But also scales well for other iblRoughnessOneLevel values.
-	return iblRoughnessOneLevel(iblSpecular) * perceptualRoughness * (2.0 - perceptualRoughness);
+	return iblRoughnessOneLevel(iblSpecular) * perceptualRoughness * (2.0f - perceptualRoughness);
 }
 float3 prefilteredRadiance(samplerCube iblSpecular, float3 r, float perceptualRoughness)
 {
@@ -139,26 +140,33 @@ float3 prefilteredRadiance(samplerCube iblSpecular, float3 r, float linearRoughn
 	return textureLod(iblSpecular, r, lod + offset).rgb;
 }
 
-float3 diffuseIrradiance(float3 normal, const float4 shBuffer[SH_COEFF_COUNT])
+float3 diffuseIrradiance(float3 normal, const half4 shBuffer[SH_COEFF_COUNT])
 {
-	float3 irradiance = shBuffer[0].xyz +
-		shBuffer[1].xyz * (normal.y) + shBuffer[2].xyz * (normal.z) + shBuffer[3].xyz * (normal.x) +
-		shBuffer[4].xyz * (normal.y * normal.x) +
-		shBuffer[5].xyz * (normal.y * normal.z) +
-		shBuffer[6].xyz * (3.0f * normal.z * normal.z - 1.0f) +
-		shBuffer[7].xyz * (normal.z * normal.x) +
-		shBuffer[8].xyz * (normal.x * normal.x - normal.y * normal.y);
-	return max(irradiance, 0.0f);
+	half3 n = half3(normal);
+	half4 qb = half4(n.y * n.x, n.y * n.z, 
+		fma(n.z * n.z, 3.0hf, -1.0hf), n.z * n.x);
+	half ft = n.x * n.x - n.y * n.y;
+
+	half3 irradiance = shBuffer[0].xyz;
+	irradiance += shBuffer[1].xyz * n.y;
+	irradiance += shBuffer[2].xyz * n.z;
+	irradiance += shBuffer[3].xyz * n.x;
+	irradiance += shBuffer[4].xyz * qb.x;
+	irradiance += shBuffer[5].xyz * qb.y;
+	irradiance += shBuffer[6].xyz * qb.z;
+	irradiance += shBuffer[7].xyz * qb.w;
+	irradiance += shBuffer[8].xyz * ft;
+	return float3(max(irradiance, half3(0.0f)));
 }
 
-float packRoughness(float linearRoughness) { return sqrt(linearRoughness); }
+float packRoughness(float linearRoughness) { return sqrt(max(linearRoughness, 0.0f)); }
 float unpackRoughness(float perceptualRoughness) { return perceptualRoughness * perceptualRoughness; }
 
 float calcGgxLod(float perceptualRoughness, float distance, float ggxLodOffset)
 {
 	const float invLog2Sqrt5 = 0.8614f;
-	float roughness = unpackRoughness(max(perceptualRoughness, MIN_ROUGHNESS));
-	return (log2(roughness / max(distance, 1.0f)) + ggxLodOffset) * invLog2Sqrt5;
+	float linearRoughness = unpackRoughness(max(perceptualRoughness, MIN_ROUGHNESS));
+	return (log2(linearRoughness / max(distance, 1.0f)) + ggxLodOffset) * invLog2Sqrt5;
 }
 
 #endif // BRDF_GSL

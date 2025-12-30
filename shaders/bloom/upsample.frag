@@ -40,5 +40,5 @@ void main()
 	c1 += textureLodOffset(srcBuffer, fs.texCoords, 0.0f, int2( 0, -1)).rgb;
 	c1 += textureLodOffset(srcBuffer, fs.texCoords, 0.0f, int2( 1,  0)).rgb;
 	c1 += textureLodOffset(srcBuffer, fs.texCoords, 0.0f, int2( 0,  1)).rgb;
-	fb.color = float4((c0 + c1 * 2.0f) * (1.0f / 16.0f), 0.0f);
+	fb.color = float4(fma(c1, float3(2.0f), c0) * (1.0f / 16.0f), 0.0f);
 }

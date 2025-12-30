@@ -15,14 +15,8 @@
 #ifndef NORMAL_MAPPING_GSL
 #define NORMAL_MAPPING_GSL
 
-float3 packNormal(float3 packedNormal)
-{
-	return fma(packedNormal, float3(0.5f), float3(0.5f));
-}
-float3 unpackNormal(float3 packedNormal)
-{
-	return fma(packedNormal, float3(2.0f), float3(-1.0f));
-}
+float3 packNormal(float3 packedNormal) { return fma(packedNormal, float3(0.5f), float3(0.5f)); }
+float3 unpackNormal(float3 packedNormal) { return fma(packedNormal, float3(2.0f), float3(-1.0f)); }
 
 float3x3 computeTBN(float4x3 model, float3 normal, float3 tangent)
 {
@@ -32,22 +26,33 @@ float3x3 computeTBN(float4x3 model, float3 normal, float3 tangent)
 	float3 b = cross(n, t);
 	return float3x3(t, b, n);
 }
+
 float3x3 approximateTBN(float3 normal)
 {
 	float3 up = abs(normal.z) < 0.999f ? 
 		float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
-    float3 tangent = normalize(cross(up, normal));
+	float3 tangent = normalize(cross(up, normal));
 	float3 bitangent = cross(normal, tangent);
 	return float3x3(tangent, bitangent, normal);
 }
-float3x3 tbnToTangentSpace(float3x3 tbn)
+half3x3 approximateTBN(half3 normal)
 {
-	return transpose(tbn);
+	half3 up = float(abs(normal.z)) < 0.999f ? 
+		half3(0.0f, 0.0f, 1.0f) : half3(1.0f, 0.0f, 0.0f);
+	half3 tangent = normalize(cross(up, normal));
+	half3 bitangent = cross(normal, tangent);
+	return half3x3(tangent, bitangent, normal);
 }
 
+float3x3 tbnToTangentSpace(float3x3 tbn) { return transpose(tbn); }
 float3 tbnGetTangent(float3x3 tbn) { return tbn[0]; }
 float3 tbnGetBitangent(float3x3 tbn) { return tbn[1]; }
 float3 tbnGetNormal(float3x3 tbn) { return tbn[2]; }
+
+half3x3 tbnToTangentSpace(half3x3 tbn) { return transpose(tbn); }
+half3 tbnGetTangent(half3x3 tbn) { return tbn[0]; }
+half3 tbnGetBitangent(half3x3 tbn) { return tbn[1]; }
+half3 tbnGetNormal(half3x3 tbn) { return tbn[2]; }
 
 float3 snapNormal(float3 normal)
 {

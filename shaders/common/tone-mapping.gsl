@@ -28,19 +28,12 @@ float3 gammaCorrection(float3 color)
 }
 float3 gammaCorrectionPrecise(float3 color)
 {
-	float3 lo = color * 12.92f;
 	float3 hi = (pow(abs(color), float3(1.0f / 2.4f)) * 1.055f) - 0.055f;
-	return mix(hi, lo, float3(lessThanEqual(color, float3(0.0031308f))));
+	return mix(hi, color * 12.92f, float3(lessThanEqual(color, float3(0.0031308f))));
 }
 
-float rgbToLum(float3 rgb)
-{
-	return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
-}
-float rgbToLuma(float3 rgb)
-{
-	return rgbToLum(gammaCorrection(rgb));
-}
+float rgbToLum(float3 rgb) { return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f)); }
+float rgbToLuma(float3 rgb) { return rgbToLum(gammaCorrection(rgb)); }
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 float3 aces(float3 x)

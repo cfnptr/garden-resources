@@ -69,7 +69,6 @@
 #define float3x4 mat3x4
 #define float4x3 mat4x3
 
-#ifdef GL_EXT_shader_explicit_arithmetic_types_float16
 #define half float16_t
 #define half2 f16vec2
 #define half3 f16vec3
@@ -83,20 +82,5 @@
 #define half4x2 f16mat4x2
 #define half3x4 f16mat3x4
 #define half4x3 f16mat4x3
-#else
-#define half float
-#define half2 vec2
-#define half3 vec3
-#define half4 vec4
-#define half2x2 mat2
-#define half3x3 mat3
-#define half4x4 mat4
-#define half2x3 mat2x3
-#define half3x2 mat3x2
-#define half2x4 mat2x4
-#define half4x2 mat4x2
-#define half3x4 mat3x4
-#define half4x3 mat4x3
-#endif
 
 #endif // TYPES_GSL

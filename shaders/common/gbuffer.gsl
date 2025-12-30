@@ -155,13 +155,11 @@ float3 encodeNormalOct(float3 normal)
 {
 	normal = normalize(normal);
 	normal /= (abs(normal.x) + abs(normal.y) + abs(normal.z));
-
-	float3 encoded;
-	encoded.y = normal.y *  0.5f + 0.5f;
-	encoded.x = normal.x *  0.5f + encoded.y;
-	encoded.y = normal.x * -0.5f + encoded.y;
-	encoded.z = clamp(normal.z * FLOAT32_MAX, 0.0f, 1.0f);
-	return encoded;
+	float y = fma(normal.y, 0.5f, 0.5f);
+	float x = fma(normal.x, 0.5f, y);
+	y = fma(normal.x, -0.5f, y);
+	float z = clamp(normal.z * FLOAT32_MAX, 0.0f, 1.0f);
+	return float3(x, y, z);
 }
 float3 decodeNormalOct(float3 encoded)
 {

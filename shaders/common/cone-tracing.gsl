@@ -20,14 +20,14 @@
 const float diffuseConeWeights[DIFFUSE_CONE_COUNT] = float[DIFFUSE_CONE_COUNT](
 	0.25f, 0.15f, 0.15f, 0.15f, 0.15f, 0.15f);
 
-const float3 diffuseConeDirs[DIFFUSE_CONE_COUNT] = float3[DIFFUSE_CONE_COUNT]
+const half3 diffuseConeDirs[DIFFUSE_CONE_COUNT] = half3[DIFFUSE_CONE_COUNT]
 ( 
-	float3( 0.0f,       0.0f,      1.0f),
-	float3( 0.0f,       0.866025f, 0.5f),
-	float3( 0.823639f,  0.267617f, 0.5f),
-	float3( 0.509037f, -0.700629f, 0.5f),
-	float3(-0.509037f, -0.700629f, 0.5f),
-	float3(-0.823639f,  0.267617f, 0.5f)
+	half3( 0.0f,       0.0f,      1.0f),
+	half3( 0.0f,       0.866025f, 0.5f),
+	half3( 0.823639f,  0.267617f, 0.5f),
+	half3( 0.509037f, -0.700629f, 0.5f),
+	half3(-0.509037f, -0.700629f, 0.5f),
+	half3(-0.823639f,  0.267617f, 0.5f)
 );
 
 #endif // CONE_TRACING_GSL
