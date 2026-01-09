@@ -73,7 +73,8 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 	{
 		float3 reflected = reflect(gBuffer.viewDirection, gBuffer.normal);
 		float3 r = computeReflectedVector(linearRoughness, gBuffer.normal, reflected);
-		terms.fr = terms.e * prefilteredRadiance(iblSpecular, r, perceptualRoughness) * energyCompensation;
+		terms.fr = terms.e * prefilteredRadiance(iblSpecular, r, gBuffer.roughness) * energyCompensation;
+		// Note: using unclamped gBuffer.roughness for a correct LOD level at 0.0f
 	}
 	#endif
 
@@ -137,7 +138,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 			const float specularAO = 1.0f;
 			#endif
 		terms.fr = fma(terms.fr, float3(attenuation), prefilteredRadiance(
-			iblSpecular, clearCoatR, ccPerceptualRoughness) * (specularAO * fc));
+			iblSpecular, clearCoatR, gBuffer.clearCoatRoughness) * (specularAO * fc));
 		#endif
     }
 	#endif

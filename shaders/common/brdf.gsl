@@ -118,9 +118,9 @@ float3 computeReflectedVector(float linearRoughness, float3 normal, float3 refle
 }
 
 //**********************************************************************************************************************
-int32 iblRoughnessOneLevel(samplerCube iblSpecular)
+float iblRoughnessOneLevel(samplerCube iblSpecular)
 {
-	return textureQueryLevels(iblSpecular) - 1;
+	return float(textureQueryLevels(iblSpecular) - 1);
 }
 float perceptualRoughnessToLod(samplerCube iblSpecular, float perceptualRoughness)
 {

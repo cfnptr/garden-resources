@@ -22,12 +22,12 @@ const float diffuseConeWeights[DIFFUSE_CONE_COUNT] = float[DIFFUSE_CONE_COUNT](
 
 const half3 diffuseConeDirs[DIFFUSE_CONE_COUNT] = half3[DIFFUSE_CONE_COUNT]
 ( 
-	half3( 0.0f,       0.0f,      1.0f),
-	half3( 0.0f,       0.866025f, 0.5f),
-	half3( 0.823639f,  0.267617f, 0.5f),
-	half3( 0.509037f, -0.700629f, 0.5f),
-	half3(-0.509037f, -0.700629f, 0.5f),
-	half3(-0.823639f,  0.267617f, 0.5f)
+	half3( 0.0hf,       0.0hf,      1.0hf),
+	half3( 0.0hf,       0.866025hf, 0.5hf),
+	half3( 0.823639hf,  0.267617hf, 0.5hf),
+	half3( 0.509037hf, -0.700629hf, 0.5hf),
+	half3(-0.509037hf, -0.700629hf, 0.5hf),
+	half3(-0.823639hf,  0.267617hf, 0.5hf)
 );
 
 float roughnessToAperture(float roughness) // Polynomial approximation of the specular GGX

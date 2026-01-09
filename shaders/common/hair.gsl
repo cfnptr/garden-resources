@@ -16,12 +16,12 @@
 #define HAIR_GSL
 
 // Based on this: https://eugenedeon.com/pdfs/egsrhair.pdf
-float3 calcHairColor(float melanin, float redness)
+float3 calcHairColor(float melanin, float redness, float thickness)
 {
 	const float3 euAbsorption = float3(0.419f, 0.697f, 1.37f); // Eumelanin
 	const float3 pheoAbsorption = float3(0.187f, 0.4f, 1.05f); // Pheomelanin
 	float3 melAbsorption = mix(euAbsorption, pheoAbsorption, redness);
-	return exp(melAbsorption * melanin * -10.0f);
+	return exp(melAbsorption * -(melanin * thickness));
 }
 
 #endif // HAIR_GSL
