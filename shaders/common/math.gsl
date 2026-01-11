@@ -26,6 +26,7 @@
 #define M_1_PI      0.318309886183790671537767526745028724 // 1 / pi
 #define M_2_PI      0.636619772367581343075535053490057448 // 2 / pi
 #define M_2_SQRTPI  1.12837916709551257389615890312154517  // 2 / sqrt(pi)
+#define M_TAU       6.28318530717958647692528676655900577  // 2 * pi
 #define M_SQRT2     1.41421356237309504880168872420969808  // sqrt(2)
 #define M_SQRT3     1.73205080756887729352744634150587237  // sqrt(3)
 #define M_SQRT1_2   0.707106781186547524400844362104849039 // 1 / sqrt(2)
@@ -37,7 +38,6 @@
 #define FLOAT_SMALL_16 0.00006103515625f
 #define FLOAT_BIG_16   65504.0f
 #define FLOAT_SMALL_24 (1.0f / 16777216.0f)
-
 
 #define FLOAT32_MAX  3.402823466e+38f
 #define FLOAT32_MIN  1.175494351e-38f
@@ -67,7 +67,7 @@
 //**********************************************************************************************************************
 float atan2(float y, float x) // C++ atan2 implementation.
 {
-	return abs(x) > abs(y) ? atan(y, x) : M_PI_2 - atan(x, y);
+	return abs(x) > abs(y) ? atan(y, x) : float(M_PI_2) - atan(x, y);
 }
 
 float map(float value, float inMin, float inMax, float outMin, float outMax)
@@ -116,7 +116,7 @@ float acosFast4(float angle) // 0.00007 radians precision
 	float x1 = abs(angle); float x2 = x1 * x1; float x3 = x2 * x1;
 	float r = fma(x1, -0.2121144f, 1.5707288f); r = fma(x2, 0.0742610f, r);
 	r = fma(x3, -0.0187293f, r); r = sqrt(1.0f - x1) * r;
-	return angle < 0.0f ? M_PI - r : r;
+	return angle < 0.0f ? float(M_PI) - r : r;
 }
 
 #endif // MATH_GSL

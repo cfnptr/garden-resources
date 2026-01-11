@@ -82,9 +82,9 @@ void main()
 
 	// TODO: lens dirt? bloomColor + bloomColor * dirtColor * dirtIntensity
 
-	float3 yxyColor = rgbToYxy(hdrColor);
-	yxyColor.x *= luminance.exposure * pc.exposureFactor;
-	hdrColor = yxyToRgb(yxyColor);
+	float3 xyyColor = rgbToXyy(hdrColor);
+	xyyColor.z *= luminance.exposure * pc.exposureFactor;
+	hdrColor = xyyToRgb(xyyColor);
 
 	float3 tonemappedColor;
 	if (TONE_MAPPER == TONE_MAPPER_ACES)

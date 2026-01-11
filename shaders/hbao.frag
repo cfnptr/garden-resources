@@ -87,7 +87,7 @@ float computeAO(float3 p, float3 n, float3 s)
 float computeCoarseAO(float2 fullResUV, float radiusP, float3 rand, float3 viewPos, float3 viewNormal)
 {
 	float stepSizeP = radiusP / (STEP_COUNT + 1);
-	const float alpha = (M_PI * 2.0f) / SSAO_DIRECTION_COUNT;
+	const float alpha = M_TAU / SSAO_DIRECTION_COUNT;
 
 	float ao = 0;
 	for (uint32 dirIndex = 0; dirIndex < SSAO_DIRECTION_COUNT; dirIndex++)

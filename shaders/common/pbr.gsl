@@ -54,7 +54,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 	IblTerms terms;
 	float perceptualRoughness = max(gBuffer.roughness, MIN_ROUGHNESS);
 	float linearRoughness = unpackRoughness(perceptualRoughness);
-	float nov = max(dot(gBuffer.normal, -gBuffer.viewDirection), 1e-4f);
+	float nov = clamp(dot(gBuffer.normal, -gBuffer.viewDirection), 1e-4f, 1.0f);
 	float reflectance = computeDielectricF0(gBuffer.reflectance);
 	float3 f0 = computeF0(gBuffer.baseColor, gBuffer.metallic, reflectance);
 	terms.e = specularDFG(dfgLUT, nov, perceptualRoughness, f0);
@@ -98,7 +98,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 	{
 		float3 viewDependent = prefilteredRadiance(iblSpecular, 
 			gBuffer.viewDirection, linearRoughness, 1.0f + gBuffer.thickness);
-		float attenuation = (1.0f - gBuffer.thickness) / (2.0f * M_PI);
+		float attenuation = (1.0f - gBuffer.thickness) / float(M_TAU);
 		terms.fd += gBuffer.subsurfaceColor * (irradiance + viewDependent) * attenuation;
 		// If have cloth model:  fd *= clamp(gBuffer.subsurfaceColor + nov, 0.0f, 1.0f);
 	}

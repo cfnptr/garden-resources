@@ -31,7 +31,7 @@ void propagateConeRay(inout ConeRay coneRay, float surfaceHalfAngle, float dista
 
 float calcConeRayCapArea(ConeRay coneRay)
 {
-	return coneRay.width * coneRay.width * (1.0f / (M_PI * 2.0f));
+	return coneRay.width * coneRay.width * float(1.0 / M_TAU);
 }
 float calcConeRayTexArea(ConeRay coneRay, float3 rayDir, float3 normal, float uvWorldArea)
 {

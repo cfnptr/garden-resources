@@ -93,7 +93,7 @@ void uvToSkyView(float bottomRadius, float viewHeight,
 	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible).
 	uv = (uv - 0.5f / pc.skyViewLutSize) * (pc.skyViewLutSize / (pc.skyViewLutSize - 1.0f));
 	float vHorizon = sqrt(viewHeight * viewHeight - bottomRadius * bottomRadius);
-	float beta = acosFast4(vHorizon / viewHeight); float zenithHorizonAngle = M_PI - beta;
+	float beta = acosFast4(vHorizon / viewHeight); float zenithHorizonAngle = float(M_PI) - beta;
 
 	if (uv.y < 0.5f)
 	{

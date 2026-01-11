@@ -104,12 +104,12 @@ bool moveToTopAtmosphere(inout float3 worldPos, float3 worldDir, float atmospher
 
 float miePhase(float g, float cosTheta) // Cornette-Shanks
 {
-	float k = (3.0f / (8.0f * M_PI)) * (1.0f - g * g) / fma(g, g, 2.0f);
+	float k = (3.0f / float(8.0 * M_PI)) * (1.0f - g * g) / fma(g, g, 2.0f);
 	return k * fma(cosTheta, cosTheta, 1.0f) / pow(fma(g, g, 1.0f) - 2.0f * g * -cosTheta, 1.5f);
 }
 float rayleighPhase(float cosTheta)
 {
-	const float factor = 3.0f / (16.0f * M_PI);
+	const float factor = 3.0f / float(16.0 * M_PI);
 	return factor * fma(cosTheta, cosTheta, 1.0f);
 }
 
@@ -214,7 +214,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 	float3 opticalDepth = float3(0.0f); float t = 0.0f; 
 
 	#ifdef USE_TRANSMITTANCE_LUT
-	const float uniformPhase = 1.0f / (4.0f * M_PI);
+	const float uniformPhase = 1.0f / float(4.0 * M_PI);
 	float cosTheta = dot(sunDir, ray.direction);
 	// Negate cosTheta because due to ray.direction being a "in" direction.
 	float miePhaseValue = miePhase(atmosphere.miePhaseG, -cosTheta);	
@@ -300,7 +300,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 			atmosphere.topRadius, pHeight, sunZenithCosAngle);
 		float3 transmittanceToSun = textureLod(transLUT, uv, 0).rgb;
 		float nol = clamp(dot(normalize(upVector), normalize(sunDir)), 0.0f, 1.0f);
-		l += globalL * transmittanceToSun * throughput * nol * atmosphere.groundAlbedo * M_1_PI;
+		l += globalL * transmittanceToSun * throughput * nol * atmosphere.groundAlbedo * float(M_1_PI);
 	}
 	#endif
 

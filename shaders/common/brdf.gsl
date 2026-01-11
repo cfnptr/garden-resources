@@ -23,16 +23,16 @@
 
 #define MIN_ROUGHNESS 0.045f
 
-float ggx(float noh, float roughness)
+float ggx(float noh, float linearRoughness)
 {
 	float oneMinusNohSquared = 1.0f - noh * noh;
-	float a = noh * roughness;
-	float k = roughness / (oneMinusNohSquared + a * a);
-	return k * k * M_1_PI;
+	float a = noh * linearRoughness;
+	float k = linearRoughness / fma(a, a, oneMinusNohSquared);
+	return k * k * float(M_1_PI);
 }
-float smithGGXCorrelated(float nov, float nol, float a)
+float smithGGXCorrelated(float nov, float nol, float linearRoughness)
 {
-	float a2 = a * a;
+	float a2 = linearRoughness * linearRoughness;
 	float lambdaV = nol * sqrt(fma(nov - a2 * nov, nov, a2));
 	float lambdaL = nov * sqrt(fma(nol - a2 * nol, nol, a2));
 	return 0.5f / (lambdaV + lambdaL);
@@ -47,7 +47,15 @@ float3 schlick(float voh, float3 f0, float f90)
 	return fma(float3(pow(1.0f - voh, 5.0f)), f90 - f0, f0);
 }
 
-float lambert() { return M_1_PI; }
+float lambert() { return float(M_1_PI); }
+
+float burley(float perceptualRoughness, float nov, float nol, float loh)
+{
+	float f90 = fma(perceptualRoughness * loh * loh, 2.0f, 0.5f);
+	float lightScatter = schlick(nol, 1.0f, f90);
+	float viewScatter = schlick(nov, 1.0f, f90);
+	return lightScatter * viewScatter * float(M_1_PI);
+}
 
 //**********************************************************************************************************************
 float2 hammersley(uint32 index, float invSampleCount)
@@ -61,10 +69,11 @@ float2 hammersley(uint32 index, float invSampleCount)
 	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
 	return float2(float(index) * invSampleCount, float(bits) * tof);
 }
-float3 importanceSamplingNdfDggx(float2 u, float a)
+float3 importanceSamplingNdfDggx(float2 u, float linearRoughness)
 {
-	float a2 = a * a; float phi = float(2.0 * M_PI) * u.x;
-	float cosTheta2 = (1.0f - u.y) / (1.0f + (a2 - 1.0f) * u.y);
+	float a2 = linearRoughness * linearRoughness;
+	float phi = u.x * float(M_TAU);
+	float cosTheta2 = (1.0f - u.y) / fma(a2 - 1.0f, u.y, 1.0f);
 	float cosTheta = sqrt(cosTheta2);
 	float sinTheta = sqrt(1.0f - cosTheta2);
 	return float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
