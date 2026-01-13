@@ -243,7 +243,7 @@ void main()
 
 	// Ratio of the delta between the global average and
 	// the center luma, over the luma range in the 3x3 neighborhood.
-	float subPixelOffset1 = clamp(abs(lumaAverage - lumaCenter) / lumaRange, 0.0f, 1.0f);
+	float subPixelOffset1 = saturate(abs(lumaAverage - lumaCenter) / lumaRange);
 	float subPixelOffset2 = (-2.0f * subPixelOffset1 + 3.0f) * subPixelOffset1 * subPixelOffset1;
 	// Compute a sub-pixel offset based on this delta.
 	float subPixelOffsetFinal = subPixelOffset2 * subPixelOffset2 * SUBPIXEL_QUALITY;

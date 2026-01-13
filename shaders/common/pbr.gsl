@@ -87,7 +87,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 	#ifndef USE_SPECULAR_ONLY
 	float3 irradiance = diffuseIrradiance(gBuffer.normal, shBuffer);
 	#ifdef USE_GLOBAL_ILLUMINATION
-	irradiance = mix(gBuffer.giColor, irradiance, shadow.a);
+	irradiance = lerp(gBuffer.giColor, irradiance, shadow.a);
 	#endif
 	float3 diffuseColor = computeDiffuseColor(gBuffer.baseColor, gBuffer.metallic);
 	terms.fd = diffuseColor * (1.0f - terms.e) * irradiance * shadow.rgb * lambert();
@@ -100,7 +100,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 			gBuffer.viewDirection, linearRoughness, 1.0f + gBuffer.thickness);
 		float attenuation = (1.0f - gBuffer.thickness) / float(M_TAU);
 		terms.fd += gBuffer.subsurfaceColor * (irradiance + viewDependent) * attenuation;
-		// If have cloth model:  fd *= clamp(gBuffer.subsurfaceColor + nov, 0.0f, 1.0f);
+		// If have cloth model:  fd *= saturate(gBuffer.subsurfaceColor + nov);
 	}
 	#endif
 

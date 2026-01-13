@@ -60,6 +60,6 @@ void main()
 	float shadow = evaluateCsmShadow(depthMap, cascadeID, lightCoords);
 
 	float4 transparency = evaluateCsmTransparency(transparentMap, cascadeID, lightCoords);
-	transparency = mix(float4(1.0f), transparency, shadow); // Note: Fix for peter-panning.
+	transparency = lerp(float4(1.0f), transparency, shadow); // Note: Fix for peter-panning.
 	fb.shadow = transparency * float4(float3(1.0f), shadow);
 }

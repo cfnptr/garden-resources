@@ -63,7 +63,7 @@ uint32 computeCsmCascadeID(float3 farPlanes, float pixelDepth)
 }
 float computeCsmOffsetZ(float3 sunDir, float3 normal, float bias)
 {
-	return (1.0f - clamp(dot(normal, sunDir), 0.0f, 1.0f)) * bias;
+	return (1.0f - saturate(dot(normal, sunDir))) * bias;
 }
 
 void computeCsmData(float4x4 uvToLight[SHADOW_MAP_CASCADE_COUNT], float2 texCoords, float pixelDepth, 

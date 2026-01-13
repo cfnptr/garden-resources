@@ -78,7 +78,7 @@ float3 getSunLuminance(float3 worldDir, bool intersectGround)
 	if (intersectGround)
 		return float3(0.0f);
 	float3 transmittance = getTransmittance(transLUT, Ray(pc.cameraPos, worldDir), pc.bottomRadius, pc.topRadius);
-	float sunDisk = clamp(((dot(worldDir, pc.sunDir) - pc.sunSize) * 2.0f) / (1.0f - pc.sunSize), 0.0f, 1.0f);
+	float sunDisk = saturate(((dot(worldDir, pc.sunDir) - pc.sunSize) * 2.0f) / (1.0f - pc.sunSize));
 	return transmittance * pc.sunColor * sunDisk;
 }
 

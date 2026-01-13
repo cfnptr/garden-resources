@@ -21,7 +21,6 @@ spec const bool USE_LIGHT_ABSORPTION = true;
 #include "common/depth.gsl"
 #include "common/random.gsl"
 #include "common/constants.gsl"
-#include "common/color-space.gsl"
 #include "common/tone-mapping.gsl"
 
 pipelineState
@@ -71,7 +70,7 @@ void main()
 	if (USE_BLOOM_BUFFER)
 	{
 		float3 bloomColor = min(textureLod(bloomBuffer, fs.texCoords, 0.0f).rgb, 65500.0f); // r11b11b10
-		hdrColor = mix(hdrColor, bloomColor, pc.bloomIntensity);
+		hdrColor = lerp(hdrColor, bloomColor, pc.bloomIntensity);
 	}
 	if (USE_LIGHT_ABSORPTION && dot(pc.absorptionColor, pc.absorptionColor) > 0.0f)
 	{
@@ -94,6 +93,6 @@ void main()
 	float3 ldrColor = gammaCorrectionPrecise(tonemappedColor);
 
 	float random = toFloat01(pcg(uint3(gl.fragCoord.xy, pc.frameIndex)).x);
-	ldrColor += mix(-pc.ditherIntensity, pc.ditherIntensity, random);
+	ldrColor += lerp(-pc.ditherIntensity, pc.ditherIntensity, random);
 	fb.ldr = float4(ldrColor, 1.0f);
 }

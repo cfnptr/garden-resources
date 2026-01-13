@@ -97,7 +97,7 @@ void main()
 		gBuffer.shadow.rgb *= accumShadow.rgb;
 		gBuffer.shadow.a = min(gBuffer.shadow.a, accumShadow.a);
 	}
-	gBuffer.shadow.rgb *= mix(pc.shadowColor.a, 1.0f, gBuffer.shadow.a);
+	gBuffer.shadow.rgb *= lerp(pc.shadowColor.a, 1.0f, gBuffer.shadow.a);
 
 	float4 worldPosition = pc.uvToWorld * float4(fs.texCoords, depth, 1.0f);
 	worldPosition.xyz /= worldPosition.w;

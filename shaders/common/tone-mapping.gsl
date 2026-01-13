@@ -15,31 +15,13 @@
 #ifndef TONE_MAPPING_GSL
 #define TONE_MAPPING_GSL
 
-#define DEFAULT_GAMMA 2.2f
-#define LUM_TO_EXP 9.6f
-
-float3 gammaCorrection(float3 color, float invGamma)
-{
-	return pow(color, float3(invGamma));
-}
-float3 gammaCorrection(float3 color)
-{
-	return pow(color, float3(1.0f / DEFAULT_GAMMA));
-}
-float3 gammaCorrectionPrecise(float3 color)
-{
-	float3 hi = (pow(abs(color), float3(1.0f / 2.4f)) * 1.055f) - 0.055f;
-	return mix(hi, color * 12.92f, float3(lessThanEqual(color, float3(0.0031308f))));
-}
-
-float rgbToLum(float3 rgb) { return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f)); }
-float rgbToLuma(float3 rgb) { return rgbToLum(gammaCorrection(rgb)); }
+#include "common/color-space.gsl"
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 float3 aces(float3 x)
 {
 	const float a = 2.51f, b = 0.03f, c = 2.43f, d = 0.59f, e = 0.14f;
-	return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
+	return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
 //**********************************************************************************************************************

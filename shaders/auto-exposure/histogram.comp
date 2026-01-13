@@ -40,7 +40,7 @@ uint32 colorToBin(float3 hdrColor, float minLogLum, float invLogLumRange)
 	float lum = rgbToLum(hdrColor);
 	if (lum < 0.005f)
 		return 0;
-	float logLum = clamp((log2(lum) - minLogLum) * invLogLumRange, 0.0f, 1.0f);
+	float logLum = saturate((log2(lum) - minLogLum) * invLogLumRange);
 	return uint32(fma(logLum, 254.0f, 1.0f));
 }
 

@@ -82,7 +82,7 @@ float falloff(float distanceSq)
 float computeAO(float3 p, float3 n, float3 s)
 {
 	float3 v = s - p; float vov = dot(v, v); float nov = dot(n, v) * inversesqrt(vov);
-	return clamp(nov - pc.novBias, 0.0f, 1.0f) * clamp(falloff(vov), 0.0f, 1.0f);
+	return saturate(nov - pc.novBias) * saturate(falloff(vov));
 }
 float computeCoarseAO(float2 fullResUV, float radiusP, float3 rand, float3 viewPos, float3 viewNormal)
 {
@@ -106,7 +106,7 @@ float computeCoarseAO(float2 fullResUV, float radiusP, float3 rand, float3 viewP
 	}
 
 	ao *= pc.aoMultiplier * (1.0f / (SSAO_DIRECTION_COUNT * STEP_COUNT));
-	return clamp(1.0f - (ao * 2.0f), 0.0f, 1.0f);
+	return saturate(1.0f - (ao * 2.0f));
 }
 
 //**********************************************************************************************************************

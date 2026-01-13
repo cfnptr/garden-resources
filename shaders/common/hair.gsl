@@ -20,7 +20,7 @@ float3 calcHairColor(float melanin, float redness, float thickness)
 {
 	const float3 euAbsorption = float3(0.419f, 0.697f, 1.37f); // Eumelanin
 	const float3 pheoAbsorption = float3(0.187f, 0.4f, 1.05f); // Pheomelanin
-	float3 melAbsorption = mix(euAbsorption, pheoAbsorption, redness);
+	float3 melAbsorption = lerp(euAbsorption, pheoAbsorption, redness);
 	return exp(melAbsorption * -(melanin * thickness));
 }
 

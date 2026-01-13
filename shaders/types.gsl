@@ -83,4 +83,28 @@
 #define half3x4 f16mat3x4
 #define half4x3 f16mat4x3
 
+//**********************************************************************************************************************
+#define printf debugPrintfEXT
+#define saturate(x) clamp(x, 0.0, 1.0)
+#define lerp(x, y, a) mix(x, y, a)
+#define mad(a, b, c) fma(a, b, c)
+#define frac(x) fract(x)
+
+#define ddx(p) dFdx(p)
+#define ddy(p) dFdy(p)
+#define ddx_fine(p) dFdxFine(p)
+#define ddy_fine(p) dFdyFine(p)
+#define ddx_coarse(p) dFdxCoarse(p)
+#define ddy_coarse(p) dFdyCoarse(p)
+
+uint16 packUnorm2x8(float2 x)
+{
+	ushort2 u = ushort2(fma(saturate(x), float2(255.0f), float2(0.5f)));
+	return u.x | (u.y << 8u);
+}
+float2 unpackUnorm2x8(uint16 x)
+{
+	return float2(x & 255u, x >> 8u) * (1.0f / 255.0f);
+}
+
 #endif // TYPES_GSL

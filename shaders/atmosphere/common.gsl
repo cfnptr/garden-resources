@@ -120,8 +120,8 @@ MediumSampleRGB sampleMediumRGB(AtmosphereParams atmosphere, float pHeight)
 	float densityMie = exp(atmosphere.mieDensityExpScale * viewHeight);
 	float densityRay = exp(atmosphere.rayDensityExpScale * viewHeight);
 	float densityOzo = viewHeight < atmosphere.absDensity0LayerWidth ?
-		clamp(fma(atmosphere.absDensity0LinearTerm, viewHeight, atmosphere.absDensity0ConstantTerm), 0.0f, 1.0f) :
-		clamp(fma(atmosphere.absDensity1LinearTerm, viewHeight, atmosphere.absDensity1ConstantTerm), 0.0f, 1.0f);
+		saturate(fma(atmosphere.absDensity0LinearTerm, viewHeight, atmosphere.absDensity0ConstantTerm)) :
+		saturate(fma(atmosphere.absDensity1LinearTerm, viewHeight, atmosphere.absDensity1ConstantTerm));
 
 	MediumSampleRGB s;
 	s.extinctionMie = densityMie * atmosphere.mieExtinction;
@@ -138,8 +138,8 @@ MediumSampleRGB sampleMediumRGB(AtmosphereParams atmosphere, float pHeight)
 float3 getMultipleScattering(sampler2D multiScatLUT, float bottomRadius, 
 	float topRadius, float pHeight, float viewZenithCosAngle)
 {
-	float2 texCoords = clamp(float2(fma(viewZenithCosAngle, 0.5f, 0.5f), 
-		(pHeight - bottomRadius) / (topRadius - bottomRadius)), 0.0f, 1.0f);
+	float2 texCoords = saturate(float2(fma(viewZenithCosAngle, 0.5f, 0.5f), 
+		(pHeight - bottomRadius) / (topRadius - bottomRadius)));
 	texCoords = (texCoords + 0.5f / MULTI_SCAT_LUT_LENGTH) * 
 		(MULTI_SCAT_LUT_LENGTH / (MULTI_SCAT_LUT_LENGTH + 1.0f));
 	return textureLod(multiScatLUT, texCoords, 0).rgb;
@@ -198,8 +198,8 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 	tMax = min(tMax, tMaxMax);
 
 	#ifdef USE_SCAT_VAR_SAMPLE_COUNT
-	float sampleCount = mix(RAY_MARCH_SPP_MIN, RAY_MARCH_SPP_MAX, 
-		clamp(tMax * (1.0f / RAY_MARCH_SPP_DIST), 0.0f, 1.0f));
+	float sampleCount = lerp(RAY_MARCH_SPP_MIN, RAY_MARCH_SPP_MAX, 
+		saturate(tMax * (1.0f / RAY_MARCH_SPP_DIST)));
 	float sampleCountFloor = floor(sampleCount);
 	// Rescale tMax to map to the last entire step segment.
 	float invSampleCount = 1.0f / sampleCount;
@@ -299,7 +299,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, 
 			atmosphere.topRadius, pHeight, sunZenithCosAngle);
 		float3 transmittanceToSun = textureLod(transLUT, uv, 0).rgb;
-		float nol = clamp(dot(normalize(upVector), normalize(sunDir)), 0.0f, 1.0f);
+		float nol = saturate(dot(normalize(upVector), normalize(sunDir)));
 		l += globalL * transmittanceToSun * throughput * nol * atmosphere.groundAlbedo * float(M_1_PI);
 	}
 	#endif
