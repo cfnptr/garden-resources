@@ -157,15 +157,15 @@ float3 diffuseIrradiance(float3 normal, const half4 shBuffer[SH_COEFF_COUNT])
 	half ft = n.x * n.x - n.y * n.y;
 
 	half3 irradiance = shBuffer[0].xyz;
-	irradiance += shBuffer[1].xyz * n.y;
-	irradiance += shBuffer[2].xyz * n.z;
-	irradiance += shBuffer[3].xyz * n.x;
-	irradiance += shBuffer[4].xyz * qb.x;
-	irradiance += shBuffer[5].xyz * qb.y;
-	irradiance += shBuffer[6].xyz * qb.z;
-	irradiance += shBuffer[7].xyz * qb.w;
-	irradiance += shBuffer[8].xyz * ft;
-	return float3(max(irradiance, half3(0.0f)));
+	irradiance = fma(shBuffer[1].xyz, half3(n.y), irradiance);
+	irradiance = fma(shBuffer[2].xyz, half3(n.z), irradiance);
+	irradiance = fma(shBuffer[3].xyz, half3(n.x), irradiance);
+	irradiance = fma(shBuffer[4].xyz, half3(qb.x), irradiance);
+	irradiance = fma(shBuffer[5].xyz, half3(qb.y), irradiance);
+	irradiance = fma(shBuffer[6].xyz, half3(qb.z), irradiance);
+	irradiance = fma(shBuffer[7].xyz, half3(qb.w), irradiance);
+	irradiance = fma(shBuffer[8].xyz, half3(ft), irradiance);
+	return float3(max(irradiance, half3(0.0hf)));
 }
 
 float packRoughness(float linearRoughness) { return sqrt(max(linearRoughness, 0.0f)); }

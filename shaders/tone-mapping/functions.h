@@ -15,14 +15,17 @@
 #ifndef TONE_MAPPING_FUNCTIONS_H
 #define TONE_MAPPING_FUNCTIONS_H
 
-#define TONE_MAPPER_ACES 0
-#define TONE_MAPPER_UCHIMURA 1
-#define TONE_MAPPER_COUNT 2
+#define TONE_MAPPER_NONE 0
+#define TONE_MAPPER_ACES_FAST 1
+#define TONE_MAPPER_ACES_FILMIC 2
+#define TONE_MAPPER_UCHIMURA 3
+#define TONE_MAPPER_PBR_NEUTRAL 4
+#define TONE_MAPPER_COUNT 5
 
 #ifdef __GARDEN__
 static const char* TONE_MAPPER_NAMES[TONE_MAPPER_COUNT] =
 {
-	"ACES", "Uchimura", 
+	"None", "ACES Fast", "ACES Filmic", "Uchimura", "PBR Neutral"
 };
 #endif
 

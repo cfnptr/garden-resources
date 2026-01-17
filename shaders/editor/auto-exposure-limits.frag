@@ -38,7 +38,7 @@ uniform pushConstants
 
 void main()
 {
-	float lum = rgbToLum(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb);
+	float lum = calcLum(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb);
 	if (lum < pc.minLum)
 		fb.color = float4(0.0f, 0.0f, 0.8f, 0.4f);
 	else if (lum > pc.maxLum)

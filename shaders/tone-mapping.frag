@@ -14,7 +14,7 @@
 
 #include "tone-mapping/functions.h"
 
-spec const uint32 TONE_MAPPER = TONE_MAPPER_ACES;
+spec const uint32 TONE_MAPPER = TONE_MAPPER_NONE;
 spec const bool USE_BLOOM_BUFFER = true;
 spec const bool USE_LIGHT_ABSORPTION = true;
 
@@ -67,7 +67,7 @@ void main()
 {
 	float3 hdrColor = textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb;
 
-	if (USE_BLOOM_BUFFER)
+	if (USE_BLOOM_BUFFER)	
 	{
 		float3 bloomColor = min(textureLod(bloomBuffer, fs.texCoords, 0.0f).rgb, 65500.0f); // r11b11b10
 		hdrColor = lerp(hdrColor, bloomColor, pc.bloomIntensity);
@@ -85,13 +85,16 @@ void main()
 	xyyColor.z *= luminance.exposure * pc.exposureFactor;
 	hdrColor = xyyToRgb(xyyColor);
 
-	float3 tonemappedColor;
-	if (TONE_MAPPER == TONE_MAPPER_ACES)
-		tonemappedColor = aces(hdrColor);
-	else
-		tonemappedColor = uchimura(hdrColor);
-	float3 ldrColor = gammaCorrectionPrecise(tonemappedColor);
+	if (TONE_MAPPER == TONE_MAPPER_ACES_FAST)
+		hdrColor = lottesTonemap(hdrColor * 0.8f);
+	else if (TONE_MAPPER == TONE_MAPPER_ACES_FILMIC)
+		hdrColor = acesFilmicTonemap(hdrColor * 1.6f);
+	else if (TONE_MAPPER == TONE_MAPPER_UCHIMURA)
+		hdrColor = uchimuraTonemap(hdrColor);
+	else if (TONE_MAPPER == TONE_MAPPER_PBR_NEUTRAL)
+		hdrColor = pbrNeutralTonemap(hdrColor);
 
+	float3 ldrColor = gammaCorrectionPrecise(hdrColor);
 	float random = toFloat01(pcg(uint3(gl.fragCoord.xy, pc.frameIndex)).x);
 	ldrColor += lerp(-pc.ditherIntensity, pc.ditherIntensity, random);
 	fb.ldr = float4(ldrColor, 1.0f);
