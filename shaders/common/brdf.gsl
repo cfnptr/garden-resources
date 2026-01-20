@@ -152,18 +152,18 @@ float3 prefilteredRadiance(samplerCube iblSpecular, float3 r, float linearRoughn
 float3 diffuseIrradiance(float3 normal, const half4 shBuffer[SH_COEFF_COUNT])
 {
 	half3 n = half3(normal);
-	half4 qb = half4(n.y * n.x, n.y * n.z, 
-		fma(n.z * n.z, 3.0hf, -1.0hf), n.z * n.x);
+	half4 qb = n.yyzz * n.xzzx;
+	qb.z = fma(qb.z, 3.0hf, -1.0hf);
 	half ft = n.x * n.x - n.y * n.y;
 
 	half3 irradiance = shBuffer[0].xyz;
-	irradiance = fma(shBuffer[1].xyz, half3(n.y), irradiance);
-	irradiance = fma(shBuffer[2].xyz, half3(n.z), irradiance);
-	irradiance = fma(shBuffer[3].xyz, half3(n.x), irradiance);
-	irradiance = fma(shBuffer[4].xyz, half3(qb.x), irradiance);
-	irradiance = fma(shBuffer[5].xyz, half3(qb.y), irradiance);
-	irradiance = fma(shBuffer[6].xyz, half3(qb.z), irradiance);
-	irradiance = fma(shBuffer[7].xyz, half3(qb.w), irradiance);
+	irradiance = fma(shBuffer[1].xyz, n.yyy, irradiance);
+	irradiance = fma(shBuffer[2].xyz, n.zzz, irradiance);
+	irradiance = fma(shBuffer[3].xyz, n.xxx, irradiance);
+	irradiance = fma(shBuffer[4].xyz, qb.xxx, irradiance);
+	irradiance = fma(shBuffer[5].xyz, qb.yyy, irradiance);
+	irradiance = fma(shBuffer[6].xyz, qb.zzz, irradiance);
+	irradiance = fma(shBuffer[7].xyz, qb.www, irradiance);
 	irradiance = fma(shBuffer[8].xyz, half3(ft), irradiance);
 	return float3(max(irradiance, half3(0.0hf)));
 }

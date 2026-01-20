@@ -68,7 +68,7 @@ float simplexNoise(float3 v)
 		i.x + float4(0.0f, i1.x, i2.x, 1.0f));
 
 	float n_ = 1.0f / 7.0f;
-	float3  ns = n_ * d.wyz - d.xzx;
+	float3 ns = n_ * d.wyz - d.xzx;
 	float4 j = p - 49.0f * floor(p * ns.z * ns.z);
 	float4 x_ = floor(j * ns.z);
 	float4 y_ = floor(j - 7.0f * x_);
@@ -77,7 +77,7 @@ float simplexNoise(float3 v)
 	float4 h = 1.0f - abs(x) - abs(y);
 	float4 b0 = float4(x.xy, y.xy);
 	float4 b1 = float4(x.zw, y.zw);
-	float4 s0 = floor(b0) * 2.0 + 1.0f;
+	float4 s0 = floor(b0) * 2.0f + 1.0f;
 	float4 s1 = floor(b1) * 2.0f + 1.0f;
 	float4 sh = -step(h, float4(0.0f));
 	float4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
@@ -88,10 +88,7 @@ float simplexNoise(float3 v)
 	float3 p3 = float3(a1.zw, h.w);
 
 	float4 norm = taylorInvSqrt(float4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-	p0 *= norm.x;
-	p1 *= norm.y;
-	p2 *= norm.z;
-	p3 *= norm.w;
+	p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
 
 	float4 m = max(0.6f - float4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0f);
 	m = m * m;

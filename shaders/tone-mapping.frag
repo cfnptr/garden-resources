@@ -97,5 +97,5 @@ void main()
 	float3 ldrColor = gammaCorrectionPrecise(hdrColor);
 	float random = toFloat01(pcg(uint3(gl.fragCoord.xy, pc.frameIndex)).x);
 	ldrColor += lerp(-pc.ditherIntensity, pc.ditherIntensity, random);
-	fb.ldr = float4(ldrColor, 1.0f);
+	fb.ldr = float4(ldrColor, calcLum(ldrColor));
 }

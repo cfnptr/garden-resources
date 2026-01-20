@@ -45,6 +45,7 @@ uniform sampler2D g4;
 uniform sampler2D g5;
 
 uniform sampler2D hdrBuffer;
+uniform sampler2D ldrBuffer;
 uniform sampler2D depthBuffer;
 uniform sampler2D reflBuffer;
 uniform sampler2D shadowBuffer;
@@ -172,6 +173,11 @@ void main()
 		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
 		float3 worldPosition = calcWorldPosition(depth, fs.texCoords, pc.invViewProj);
 		fb.color = float4(log(abs(worldPosition) + float3(1.0f)) * 0.1f, 1.0f);
+	}
+	else if (pc.drawMode == G_BUFFER_DRAW_MODE_HDR_LUMA)
+	{
+		float luma = textureLod(ldrBuffer, fs.texCoords, 0.0f).a;
+		fb.color = float4(float3(luma), 1.0f);
 	}
 	else fb.color = float4(1.0f, 0.0f, 1.0f, 1.0f);
 

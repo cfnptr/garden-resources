@@ -46,7 +46,8 @@
 #define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_ALPHA 26
 #define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_AO 27
 #define G_BUFFER_DRAW_MODE_WORLD_POSITION 28
-#define G_BUFFER_DRAW_MODE_COUNT 29
+#define G_BUFFER_DRAW_MODE_HDR_LUMA 29
+#define G_BUFFER_DRAW_MODE_COUNT 30
 
 #ifdef __GARDEN__
 static const char* G_BUFFER_DRAW_MODE_NAMES[G_BUFFER_DRAW_MODE_COUNT] =
@@ -61,7 +62,7 @@ static const char* G_BUFFER_DRAW_MODE_NAMES[G_BUFFER_DRAW_MODE_COUNT] =
 	
 
 	"Global Blured Shadow Color", "Global Blured Shadow Alpha", 
-	"Global Blured AO", "World Position"
+	"Global Blured AO", "World Position", "HDR Luma"
 };
 #endif
 

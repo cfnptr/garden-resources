@@ -142,7 +142,7 @@ float3 getMultipleScattering(sampler2D multiScatLUT, float bottomRadius,
 		(pHeight - bottomRadius) / (topRadius - bottomRadius)));
 	texCoords = (texCoords + 0.5f / MULTI_SCAT_LUT_LENGTH) * 
 		(MULTI_SCAT_LUT_LENGTH / (MULTI_SCAT_LUT_LENGTH + 1.0f));
-	return textureLod(multiScatLUT, texCoords, 0).rgb;
+	return textureLod(multiScatLUT, texCoords, 0.0f).rgb;
 }
 
 float2 transmittanceRmuToUV(float bottomRadius, float topRadius, float r, float mu)
@@ -259,7 +259,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		#ifdef USE_TRANSMITTANCE_LUT
 		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, 
 			atmosphere.topRadius, pHeight, sunZenithCosAngle);
-		float3 transmittanceToSun = textureLod(transLUT, uv, 0).rgb;
+		float3 transmittanceToSun = textureLod(transLUT, uv, 0.0f).rgb;
 
 		#ifdef USE_SCAT_MIE_RAY_PHASE
 		float3 phaseTimesScattering = medium.scatteringMie * 
@@ -298,7 +298,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		float sunZenithCosAngle = dot(sunDir, upVector);
 		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, 
 			atmosphere.topRadius, pHeight, sunZenithCosAngle);
-		float3 transmittanceToSun = textureLod(transLUT, uv, 0).rgb;
+		float3 transmittanceToSun = textureLod(transLUT, uv, 0.0f).rgb;
 		float nol = saturate(dot(normalize(upVector), normalize(sunDir)));
 		l += globalL * transmittanceToSun * throughput * nol * atmosphere.groundAlbedo * float(M_1_PI);
 	}

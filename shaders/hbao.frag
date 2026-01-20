@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Based on this: https://github.com/nvpro-samples/gl_ssao
+
 #include "ssao/defines.h"
 #include "common/depth.gsl"
 

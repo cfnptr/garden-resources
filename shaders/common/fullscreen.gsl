@@ -21,7 +21,7 @@ float2 toFullscreenTexCoords(int32 vertexIndex)
 }
 float3 toFullscreenPosition(float2 texCoords)
 {
-	return float3(texCoords * 2.0f - 1.0f, 0.0f);
+	return float3(fma(texCoords, float2(2.0f), float2(-1.0f)), 0.0f);
 }
 
 #endif // FULLSCREEN_GSL
