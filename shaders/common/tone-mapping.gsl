@@ -90,7 +90,7 @@ float3 agxContrastApprox(float3 x)
 
 float3 rgbToAgx(float3 rgb, float minEV, float maxEV)
 {
-	float3 x = log2(max(rgbToAgxMat * rgb, 1e-10));
+	float3 x = log2(max(rgbToAgxMat * rgb, 1e-10f));
 	return agxContrastApprox(saturate((x - minEV) / (maxEV - minEV)));
 }
 float3 agxToRgb(float3 agx) { return agxToRgbMat * agx; }

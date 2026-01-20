@@ -106,7 +106,7 @@ const float3x3 logLuvToRgbMat = float3x3
 
 ushort2 rgbToLogLuv(float3 rgb)
 {
-	float3 luv = max(rgbToLogLuvMat * rgb, float3(1e-6));
+	float3 luv = max(rgbToLogLuvMat * rgb, float3(1e-6f));
 	ushort2 logLuv = ushort2(packUnorm2x8(luv.xy / luv.z), 
 		uint16(fma(log2(luv.y), float(1.0 / 64.0), 0.5f) * 65535.0f));
 	return dot(rgb, rgb) > 0.0f ? logLuv : ushort2(0);
