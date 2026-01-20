@@ -16,37 +16,30 @@
 
 #include "common/tone-mapping.gsl"
 
-// Settings for FXAA.
-#define EDGE_THRESHOLD_MIN 0.0312f
-#define EDGE_THRESHOLD_MAX 0.125f
-#define QUALITY(q) ((q) < 5 ? 1.0f : ((q) > 5 ? ((q) < 10 ? 2.0f : ((q) < 11 ? 4.0f : 8.0f)) : 1.5f))
+spec const float EDGE_THRESHOLD_MIN = 0.0312f;
+spec const float EDGE_THRESHOLD_MAX = 0.125f;
+spec const float SUBPIXEL_QUALITY = 0.75f;
+
 #define ITERATIONS 12
-#define SUBPIXEL_QUALITY 0.75f
-// TODO: set these values using spec consts?
+#define QUALITY(q) ((q) < 5 ? 1.0f : ((q) > 5 ? ((q) < 10 ? 2.0f : ((q) < 11 ? 4.0f : 8.0f)) : 1.5f))
 
 pipelineState
 {
 	faceCulling = off;
 }
 
+in noperspective float2 fs.texCoords;
+out float4 fb.ldr;
+
 uniform pushConstants
 {
 	float2 invFrameSize;
 } pc;
 
-in noperspective float2 fs.texCoords;
-out float4 fb.ldr;
-
-uniform sampler2D
-{
-	filter = linear;
-} hdrBuffer;
 uniform sampler2D
 {
 	filter = linear;
 } ldrBuffer;
-
-// TODO: try to calc luma using compute and store it to the hdr buffer .a, could be faster?
 
 //**********************************************************************************************************************
 // Performs FXAA post-process anti-aliasing as described in the 
@@ -54,14 +47,14 @@ uniform sampler2D
 void main()
 {
 	// Color and luma at the current fragment
-	float3 colorCenter = textureLod(ldrBuffer, fs.texCoords, 0.0f).rgb;
-	float lumaCenter = rgbToLuma(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb);
+	float4 ldrColor = textureLod(ldrBuffer, fs.texCoords, 0.0f);
+	float3 colorCenter = ldrColor.rgb; float lumaCenter = ldrColor.a;
 	
 	// Luma at the four direct neighbours of the current fragment.
-	float lumaDown 	= rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2( 0, -1)).rgb);
-	float lumaUp 	= rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2( 0,  1)).rgb);
-	float lumaLeft 	= rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2(-1,  0)).rgb);
-	float lumaRight = rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2( 1,  0)).rgb);
+	float lumaDown 	= textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2( 0, -1)).a;
+	float lumaUp 	= textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2( 0,  1)).a;
+	float lumaLeft 	= textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2(-1,  0)).a;
+	float lumaRight = textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2( 1,  0)).a;
 	
 	// Find the maximum and minimum luma around the current fragment.
 	float lumaMin = min(lumaCenter, min(min(lumaDown, lumaUp), min(lumaLeft, lumaRight)));
@@ -73,16 +66,13 @@ void main()
 	// If the luma variation is lower that a threshold (or if we are in areally dark area), 
 	// we are not on an edge, don't perform any AA.
 	if (lumaRange < max(EDGE_THRESHOLD_MIN, lumaMax * EDGE_THRESHOLD_MAX))
-	{
-		fb.ldr = float4(colorCenter, 1.0f);
-		return;
-	}
+		discard;
 	
 	// Query the 4 remaining corners lumas.
-	float lumaDownLeft 	= rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2(-1, -1)).rgb);
-	float lumaUpRight 	= rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2( 1,  1)).rgb);
-	float lumaUpLeft 	= rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2(-1,  1)).rgb);
-	float lumaDownRight = rgbToLuma(textureLodOffset(hdrBuffer, fs.texCoords, 0.0f, int2( 1, -1)).rgb);
+	float lumaDownLeft 	= textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2(-1, -1)).a;
+	float lumaUpRight 	= textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2( 1,  1)).a;
+	float lumaUpLeft 	= textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2(-1,  1)).a;
+	float lumaDownRight = textureLodOffset(ldrBuffer, fs.texCoords, 0.0f, int2( 1, -1)).a;
 	
 	// Combine the four edges lumas (using intermediary variables for future computations with the same values).
 	float lumaDownUp = lumaDown + lumaUp;
@@ -144,8 +134,8 @@ void main()
 	
 	// Read the lumas at both current extremities of the exploration segment, 
 	// and compute the delta wrt to the local average luma.
-	float lumaEnd1 = rgbToLuma(textureLod(hdrBuffer, uv1, 0.0f).rgb);
-	float lumaEnd2 = rgbToLuma(textureLod(hdrBuffer, uv2, 0.0f).rgb);
+	float lumaEnd1 = textureLod(ldrBuffer, uv1, 0.0f).a;
+	float lumaEnd2 = textureLod(ldrBuffer, uv2, 0.0f).a;
 	lumaEnd1 -= lumaLocalAverage; lumaEnd2 -= lumaLocalAverage;
 	
 	// If the luma deltas at the current extremities is larger than the 
@@ -168,14 +158,14 @@ void main()
 			// If needed, read luma in 1st direction, compute delta.
 			if (!reached1)
 			{
-				lumaEnd1 = rgbToLuma(textureLod(hdrBuffer, uv1, 0.0f).rgb);
+				lumaEnd1 = textureLod(ldrBuffer, uv1, 0.0f).a;
 				lumaEnd1 = lumaEnd1 - lumaLocalAverage;
 			}
 
 			// If needed, read luma in opposite direction, compute delta.
 			if (!reached2)
 			{
-				lumaEnd2 = rgbToLuma(textureLod(hdrBuffer, uv2, 0.0f).rgb);
+				lumaEnd2 = textureLod(ldrBuffer, uv2, 0.0f).a;
 				lumaEnd2 = lumaEnd2 - lumaLocalAverage;
 			}
 
@@ -248,6 +238,5 @@ void main()
 	else finalUV.x = fma(finalOffset, stepLength, finalUV.x);
 	
 	// Read the color at the new UV coordinates, and use it.
-	float3 finalColor = textureLod(ldrBuffer, finalUV, 0.0f).rgb;
-	fb.ldr = float4(finalColor, 1.0f);
+	fb.ldr = textureLod(ldrBuffer, finalUV, 0.0f);
 }
