@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef HBAO_DEFINES_H
-#define HBAO_DEFINES_H
+#ifndef SSAO_DEFINES_H
+#define SSAO_DEFINES_H
 
 #define SSAO_NOISE_SIZE 4
 #define SSAO_DIRECTION_COUNT 8
 
-#endif // HBAO_DEFINES_H
+#endif // SSAO_DEFINES_H

@@ -48,12 +48,6 @@ float4 srgbToRgb(byte4 sRGB) { return srgbToRgb(decodeRgb(sRGB)); };
 float3 gammaCorrection(float3 color, float invGamma) { return pow(color, float3(invGamma)); }
 float3 gammaCorrection(float3 color) { return pow(color, float3(1.0 / DEFAULT_GAMMA)); }
 
-float3 gammaCorrectionPrecise(float3 color)
-{
-	float3 hi = (pow(abs(color), float3(1.0 / 2.4)) * 1.055f) - 0.055f;
-	return lerp(hi, color * 12.92f, float3(lessThanEqual(color, float3(0.0031308f))));
-}
-
 float calcLum(float3 x) { return dot(x, float3(0.2126f, 0.7152f, 0.0722f)); }
 float rgbToLuma(float3 rgb) { return calcLum(gammaCorrection(rgb)); }
 
@@ -93,15 +87,15 @@ float3 xyyToRgb(float3 xyy) { return xyzToRgb(xyyToXyz(xyy)); }
 // Linear sRGB <-> LogLuv
 const float3x3 rgbToLogLuvMat = float3x3
 (
-	0.2209f, 0.3390f, 0.4184f,
-	0.1138f, 0.6780f, 0.7319f,
-	0.0102f, 0.1130f, 0.2969f
+	0.2209f, 0.1138f, 0.0102f,
+	0.3390f, 0.6780f, 0.1130f,
+	0.4184f, 0.7319f, 0.2969f
 );
 const float3x3 logLuvToRgbMat = float3x3
 (
-	 6.0014f, -2.7008f, -1.7996f,
-	-1.3320f,  3.1029f, -5.7721f,
-	 0.3008f, -1.0882f,  5.6268f
+	 6.0014f, -1.3320f,  0.3008f,
+	-2.7008f,  3.1029f, -1.0882f,
+	-1.7996f, -5.7721f,  5.6268f
 );
 
 ushort2 rgbToLogLuv(float3 rgb)
@@ -116,7 +110,8 @@ float3 logLuvToRgb(ushort2 logLuv)
 	float3 luv; float2 uv = unpackUnorm2x8(logLuv.x);
 	luv.y = exp2(fma(float(logLuv.y), float(1.0 / 65535.0) * 64.0f, -32.0f));
 	luv.z = luv.y / uv.y; luv.x = luv.z * uv.x;
-	return max(logLuvToRgbMat * luv, float3(0.0f));
+	float3 rgb = max(logLuvToRgbMat * luv, float3(0.0f));
+	return all(equal(logLuv, ushort2(0))) ? float3(0.0f) : rgb;
 }
 
 #endif // COLOR_SPACE_GSL

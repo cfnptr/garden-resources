@@ -94,7 +94,7 @@ void main()
 	else if (TONE_MAPPER == TONE_MAPPER_PBR_NEUTRAL)
 		hdrColor = pbrNeutralTonemap(hdrColor);
 
-	float3 ldrColor = gammaCorrectionPrecise(hdrColor);
+	float3 ldrColor = rgbToSrgb(hdrColor);
 	float random = toFloat01(pcg(uint3(gl.fragCoord.xy, pc.frameIndex)).x);
 	ldrColor += lerp(-pc.ditherIntensity, pc.ditherIntensity, random);
 	fb.ldr = float4(ldrColor, calcLum(ldrColor));
