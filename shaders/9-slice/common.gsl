@@ -15,7 +15,7 @@
 #ifndef _9_SLICE_GSL
 #define _9_SLICE_GSL
 
-#include "common/math.gsl"
+#include "common/remap.gsl"
 
 struct InstanceData
 {
@@ -30,10 +30,10 @@ struct InstanceData
 float mapAxis(float coord, float textureBorder, float windowBorder)
 {
 	if (coord < windowBorder)
-		return map(coord, 0.0f, windowBorder, 0.0f, textureBorder);
+		return remap(coord, 0.0f, windowBorder, 0.0f, textureBorder);
 	if (coord < 1.0f - windowBorder)
-		return map(coord,  windowBorder, 1.0f - windowBorder, textureBorder, 1.0f - textureBorder);
-	return map(coord, 1.0f - windowBorder, 1.0f, 1.0f - textureBorder, 1.0f);
+		return remap(coord,  windowBorder, 1.0f - windowBorder, textureBorder, 1.0f - textureBorder);
+	return remap(coord, 1.0f - windowBorder, 1.0f, 1.0f - textureBorder, 1.0f);
 } 
 
 #endif // _9_SLICE_GSL

@@ -32,14 +32,17 @@
 	float deltaTime;         \
 	float3 lightDir;         \
 	float emissiveCoeff;     \
-	float3 skyColor;         \
+	float3 sunLight;         \
 	float anglePerPixel;     \
+	float3 ambientLight;     \
+	float mipLodBias;        \
+	float3 upDir;            \
+	float ggxLodOffset;      \
 	float2 frameSize;        \
 	float2 invFrameSize;     \
 	float2 invFrameSizeSq;   \
 	float2 jitterOffset;     \
 	float2 prevJitterOffset; \
-	float mipLodBias;        \
-	float ggxLodOffset;
+	float3 windDir;
 
 #endif // CONSTANTS_GSL

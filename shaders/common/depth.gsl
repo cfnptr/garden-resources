@@ -26,7 +26,7 @@
 
 #define MIN_DEPTH_X(depth) min(depth)
 #define MIN_DEPTH(a, b) min(a, b)
-#define MAX_DEPTH_X(depth) min(depth)
+#define MAX_DEPTH_X(depth) max(depth)
 #define MAX_DEPTH(a, b) max(a, b)
 
 float3 calcWorldPosition(float depth, float2 texCoords, float4x4 invViewProj)

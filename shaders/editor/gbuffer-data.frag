@@ -45,7 +45,6 @@ uniform sampler2D g4;
 uniform sampler2D g5;
 
 uniform sampler2D hdrBuffer;
-uniform sampler2D ldrBuffer;
 uniform sampler2D depthBuffer;
 uniform sampler2D reflBuffer;
 uniform sampler2D shadowBuffer;
@@ -176,8 +175,8 @@ void main()
 	}
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_HDR_LUMA)
 	{
-		float luma = textureLod(ldrBuffer, fs.texCoords, 0.0f).a;
-		fb.color = float4(float3(luma), 1.0f);
+		float3 hdrColor = textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb;
+		fb.color = float4(float3(rgbToLuma(hdrColor)), 1.0f);
 	}
 	else fb.color = float4(1.0f, 0.0f, 1.0f, 1.0f);
 

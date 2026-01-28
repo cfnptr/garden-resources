@@ -23,40 +23,46 @@ pipelineState
 }
 
 uniform sampler2D srcBuffer;
-out float4 fb.depth;
+out float4 fb.minMax;
 
 void main()
 {
-	float depth;
+	float2 minMax;
 
 	if (gsl.variant == HIZ_VARIANT_BASE)
 	{
-		int2 fragCoords = int2(gl.fragCoord.xy) * 2;
 		const float2 srcSize = 1.0f / float2(textureSize(srcBuffer, 0));
+		int2 fragCoords = int2(gl.fragCoord.xy) * 2;
 		float2 texCoords = (float2(fragCoords) + 0.5f) * srcSize;
-		depth = MIN_DEPTH_X(textureGather(srcBuffer, texCoords, 0));
+		minMax.x = MIN_DEPTH_X(textureGather(srcBuffer, texCoords, 0));
+		minMax.y = MAX_DEPTH_X(textureGather(srcBuffer, texCoords, 1));
 
 		bool2 isPrevLevelOdd = equal(textureSize(srcBuffer, 0) & 1, int2(1));
 		if (isPrevLevelOdd.x)
 		{
-			float4 c = textureGatherOffset(srcBuffer, texCoords, int2(1, 0), 0);
-			if (isPrevLevelOdd.x)
+			float4 minD = textureGatherOffset(srcBuffer, texCoords, int2(1, 0), 0);
+			float4 maxD = textureGatherOffset(srcBuffer, texCoords, int2(1, 0), 1);
+			minMax.x = MIN_DEPTH(minMax.x, MIN_DEPTH(minD.y, minD.z));
+			minMax.y = MAX_DEPTH(minMax.y, MAX_DEPTH(maxD.y, maxD.z));
+
+			if (isPrevLevelOdd.y)
 			{
-				int2 coords = min(fragCoords + int2(2, 2), textureSize(srcBuffer, 0) - 1);
-				depth = MIN_DEPTH(depth, texelFetch(srcBuffer, coords, 0).r);
+				float2 d = textureLodOffset(srcBuffer, texCoords, 0.0f, int2(2, 2)).xy;
+				minMax = float2(MIN_DEPTH(minMax.x, d.x), MAX_DEPTH(minMax.y, d.y));
 			}
-			depth = MIN_DEPTH(depth, MIN_DEPTH(c.y, c.z));
 		}
 		if (isPrevLevelOdd.y)
 		{
-			float4 c = textureGatherOffset(srcBuffer, texCoords, int2(0, 1), 0);
-			depth = MIN_DEPTH(depth, MIN_DEPTH(c.x, c.y));
+			float4 minD = textureGatherOffset(srcBuffer, texCoords, int2(0, 1), 0);
+			float4 maxD = textureGatherOffset(srcBuffer, texCoords, int2(0, 1), 1);
+			minMax.x = MIN_DEPTH(minMax.x, MIN_DEPTH(minD.y, minD.z));
+			minMax.y = MAX_DEPTH(minMax.y, MAX_DEPTH(maxD.y, maxD.z));
 		}
 	}
 	else // gsl.variant == HIZ_VARIANT_FIRST
 	{
-		depth = texelFetch(srcBuffer, int2(gl.fragCoord.xy), 0).r;
+		minMax = float2(texelFetch(srcBuffer, int2(gl.fragCoord.xy), 0).x);
 	}
 
-	fb.depth = float4(depth);
+	fb.minMax = float4(minMax, float2(0.0f));
 }

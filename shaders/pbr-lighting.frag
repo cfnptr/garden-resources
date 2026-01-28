@@ -65,7 +65,7 @@ uniform set1 samplerCube
 {
 	filter = linear;
 } specular;
-uniform set1 IblData
+uniform set1 ShData
 {
 	half4 data[SH_COEFF_COUNT];
 } sh;
