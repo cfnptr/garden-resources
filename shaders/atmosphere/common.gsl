@@ -20,7 +20,6 @@
 #include "common/sphere.gsl"
 #include "atmosphere/constants.h"
 
-//**********************************************************************************************************************
 struct AtmosphereParams
 {
 	float3 rayleighScattering;
@@ -167,6 +166,11 @@ float3 getTransmittance(sampler2D transLUT, Ray ray, float bottomRadius, float t
 	float2 uv = transmittanceRmuToUV(bottomRadius, topRadius, viewHeight, viewZenithCosAngle);
 	return textureLod(transLUT, uv, 0.0f).rgb;
 }
+
+#ifdef USE_CAMERA_VOLUME
+float aerialPersDepthToSlice(float depth) { return depth * (1.0f / KM_PER_SLICE); }
+float aerialPerspSliceToDepth(float slice) { return slice * KM_PER_SLICE; }
+#endif
 
 //**********************************************************************************************************************
 ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray, 

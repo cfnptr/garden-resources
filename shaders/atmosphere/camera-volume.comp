@@ -84,8 +84,6 @@ AtmosphereParams getAtmosphereParams()
 	return params;
 }
 
-float aerialPerspSliceToDepth(float slice) { return slice * KM_PER_SLICE; }
-
 //**********************************************************************************************************************
 void main()
 {

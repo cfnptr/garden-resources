@@ -15,10 +15,14 @@
 // Physically based atmosphere skybox.
 // Based on this: https://github.com/sebh/UnrealEngineSkyAtmosphere
 
-#include "atmosphere/common.gsl"
-#include "common/depth.gsl"
+#define USE_CAMERA_VOLUME
 
 spec const bool USE_CUBEMAP_ONLY = false;
+spec const float SLICE_COUNT = 8.0f;
+spec const float KM_PER_SLICE = 12.0f;
+
+#include "atmosphere/common.gsl"
+#include "common/depth.gsl"
 
 pipelineState
 {
@@ -28,6 +32,8 @@ pipelineState
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
 
+uniform sampler2D depthBuffer;
+
 uniform sampler2D
 {
 	filter = linear;
@@ -36,7 +42,10 @@ uniform sampler2D
 {
 	filter = linear;
 } skyViewLUT;
-uniform sampler2D depthBuffer;
+uniform sampler3D
+{
+	filter = linear;
+} cameraVolume;
 
 uniform pushConstants
 {
@@ -85,8 +94,7 @@ float3 getSunLuminance(float3 worldDir, bool intersectGround)
 void main()
 {
 	float depth = USE_CUBEMAP_ONLY ? FAR_PLANE_DEPTH : textureLod(depthBuffer, fs.texCoords, 0.0f).r;
-	float3 worldDir = calcViewDirection(fs.texCoords, pc.invViewProj);
-	float viewHeight = length(pc.cameraPos);
+	float3 worldDir = calcViewDirection(fs.texCoords, pc.invViewProj); float viewHeight = length(pc.cameraPos);
 
 	if (viewHeight < pc.topRadius && depth == FAR_PLANE_DEPTH)
 	{
@@ -107,31 +115,10 @@ void main()
 	if (USE_CUBEMAP_ONLY)
 		return;
 
-	discard;
-	float3 l = float3(0.0f);
-
-	// TODO: use 2 variant one with camera volume and second without (for skybox).
-
-	/*
-	ClipSpace = float3((pixPos / float2(gResolution))*float2(2.0, -2.0) - float2(1.0, -1.0), DepthBufferValue);
-	float4 DepthBufferWorldPos = mul(gSkyInvViewProjMat, float4(ClipSpace, 1.0));
-	DepthBufferWorldPos /= DepthBufferWorldPos.w;
-	float tDepth = length(DepthBufferWorldPos.xyz - (WorldPos + float3(0.0, 0.0, -Atmosphere.BottomRadius)));
-	float Slice = AerialPerspectiveDepthToSlice(tDepth);
-	float Weight = 1.0;
-	if (Slice < 0.5)
-	{
-		// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
-		Weight = saturate(Slice * 2.0);
-		Slice = 0.5;
-	}
-	float w = sqrt(Slice / AP_SLICE_COUNT);	// squared distribution
-
-	const float4 AP = Weight * AtmosphereCameraScatteringVolume.SampleLevel(samplerLinearClamp, float3(pixPos / float2(gResolution), w), 0);
-	L.rgb += AP.rgb;
-	float Opacity = AP.a;
-
-	output.Luminance = float4(L, Opacity);
-	//output.Luminance *= frac(clamp(w*AP_SLICE_COUNT, 0, AP_SLICE_COUNT));
-	*/
+	float3 worldPos = calcWorldPosition(depth, fs.texCoords, pc.invViewProj);
+	float slice = aerialPersDepthToSlice(length(worldPos * 0.001f));
+	// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
+	float weight = slice < 0.5f ? saturate(slice * 2.0f) : 1.0f; slice = max(slice, 0.5f);
+	float w = sqrt(slice * (1.0f / SLICE_COUNT)); // Squared distribution
+	fb.color = textureLod(cameraVolume, float3(fs.texCoords, w), 0.0f) * weight;
 }
