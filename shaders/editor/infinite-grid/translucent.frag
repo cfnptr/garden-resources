@@ -56,5 +56,5 @@ void main()
 	if (fb.color.a == 0.0f)
 		discard;
 
-	gl.fragDepth = calcDepth(fragPos - cc.cameraPos, cc.viewProj) + FLOAT_EPS6;
+	gl.fragDepth = MAX_DEPTH(calcDepth(fragPos - cc.cameraPos, cc.viewProj), DEPTH_EPS);
 }

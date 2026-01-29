@@ -22,7 +22,9 @@
 #define DEPTH_EPS FLOAT_EPS6
 
 #define IS_DEPTH_LESS(a, b) (a) < (b)
+#define IS_DEPTH_LESS_EQUAL(a, b) (a) <= (b)
 #define IS_DEPTH_GREATER(a, b) (a) > (b)
+#define IS_DEPTH_GREATER_EQUAL(a, b) (a) >= (b)
 
 #define MIN_DEPTH_X(depth) min(depth)
 #define MIN_DEPTH(a, b) min(a, b)
