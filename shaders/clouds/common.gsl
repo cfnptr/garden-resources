@@ -1,0 +1,105 @@
+// Copyright 2022-2026 Nikita Fediuchin. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef CLOUDS_GSL
+#define CLOUDS_GSL
+
+#include "common/math.gsl"
+#include "common/remap.gsl"
+
+float calcErosion(float value, float oldMin) { return saturate((value - oldMin) / (1.0f - oldMin)); }
+float3 calcProjSpherePoint(float bottomRadius, float3 samplePos) { return normalize(samplePos) * bottomRadius; }
+
+float calcRelativeHeight(float bottomRadius, float coverage, float3 samplePos, float invThickness)
+{
+	float3 projPos = calcProjSpherePoint(bottomRadius, samplePos);
+	float relateiveHeight = fma(distance(samplePos, projPos), invThickness, max(coverage * 0.6f, 0.2f));
+	return saturate(relateiveHeight);
+}
+float calcVerticalProfile(sampler2D verticalProfile, float temperature, float3 cloudData, float relativeHeight)
+{
+	float topProfile = textureLod(verticalProfile, float2(min(cloudData.z, temperature), relativeHeight), 0.0f).x;
+	float bottomProfile = textureLod(verticalProfile, float2(cloudData.x, relativeHeight), 0.0f).y;
+	return topProfile * bottomProfile;
+}
+float calcCloudCovergage(float coverage, float3 cloudData)
+{
+	return saturate(remap(cloudData.y, coverage, 1.0f, 0.0f, 1.0f));
+}
+
+float3 calcFieldWindDir(float3 windDir, float currentTime) { return windDir * (currentTime * 0.01f); }
+float3 calcNoiseWindDir(float3 windDir, float currentTime) { return windDir.yzx * (currentTime * -0.001f); }
+
+float calcCloudMipLevel(float3 cameraPos, float3 samplePos, float scale, float offset)
+{
+	return log2(fma(max(distance(cameraPos, samplePos) + offset, 0.0f), scale, 1.0f));
+}
+float3 sampleDataFields(sampler2D dataFields, float3 cameraPos, float3 samplePos, float3 windDir)
+{
+	const float posScale = 0.05f;
+	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 2.0f, -15.0f);
+	samplePos += windDir;
+
+	#if defined(USE_TRIPLANAR_CLOUDS)
+	float3 weights = pow(abs(normalize(samplePos)), float3(4.0f));
+	weights /= (weights.x + weights.y + weights.z);
+	float3 x = textureLod(dataFields, samplePos.zy * posScale, mipLod).xyz;
+	float3 y = textureLod(dataFields, samplePos.xz * posScale, mipLod).xyz;
+	float3 z = textureLod(dataFields, samplePos.xy * posScale, mipLod).xyz;
+	return x * weights.x + y * weights.y + z * weights.z;
+	#else
+	return textureLod(dataFields, samplePos.xz * posScale, mipLod).xyz;
+	#endif
+}
+
+//**********************************************************************************************************************
+float calcCloudDensity(sampler3D noiseShape, float3 cameraPos, 
+	float3 samplePos, float3 cloudData, float dimProfile, float3 windDir)
+{
+	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 0.5f, -15.0f);
+	float4 noise = textureLod(noiseShape, (samplePos + windDir) * 0.5f, mipLod);
+	float wispyNoise = lerp(noise.r, noise.g, dimProfile);
+	float billowyNoise = lerp(noise.b * 0.3f, noise.a * 0.3f, pow(dimProfile, 0.25f));
+	float noiseComposite = lerp(wispyNoise, billowyNoise, cloudData.z);
+	return calcErosion(dimProfile, noiseComposite);
+}
+
+float hgPhase(float cosTheta, float eccentricity) // Henyey Greenstein
+{
+	const float g2 = eccentricity * eccentricity;
+	float i = inversesqrt((1.0f + g2) - cosTheta * (eccentricity * 2.0f));
+	return (i * i * i) * ((1.0f - g2) * M_1_PI4);
+}
+float hgPhaseCloud(float cosTheta) // Emulates the sun silver lining highlights.
+{
+	const float eccentricity = 0.6f, silverIntens = 0.6f, silverSpread = 0.2f;
+	return max(hgPhase(cosTheta, eccentricity), hgPhase(cosTheta, 0.99f - silverSpread) * silverIntens);
+}
+
+// HG makes far clouds too dark, clouds away from sun dir need extra scattering.
+float beerLambertCloud(float accumDensity, float cosTheta) 
+{
+	float transmission = exp(-accumDensity);
+	float modulated = max(transmission, exp(accumDensity * -0.25f) * 0.7f);
+	return mix(transmission, modulated, fma(cosTheta, -0.5f, 0.5f));
+}
+float calcMultiscattering(float hgMultiScat, float stepSize, float3 cloudData, 
+	float relativeHeight, float cloudCoverage, float dimProfile, float transmittacne)
+{
+	const float depthPower = 0.1f, heightPower = 2.0f;
+	return hgMultiScat * remapClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
+		pow(cloudCoverage * cloudData.z, 0.25f) * pow(transmittacne, depthPower) * pow(relativeHeight, heightPower);
+}
+
+#endif // CLOUDS_GSL

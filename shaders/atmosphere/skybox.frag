@@ -116,9 +116,5 @@ void main()
 		return;
 
 	float3 worldPos = calcWorldPosition(depth, fs.texCoords, pc.invViewProj);
-	float slice = aerialPersDepthToSlice(length(worldPos * 0.001f));
-	// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
-	float weight = slice < 0.5f ? saturate(slice * 2.0f) : 1.0f; slice = max(slice, 0.5f);
-	float w = sqrt(slice * (1.0f / SLICE_COUNT)); // Squared distribution
-	fb.color = textureLod(cameraVolume, float3(fs.texCoords, w), 0.0f) * weight;
+	fb.color = getAerialPerspLuminance(cameraVolume, fs.texCoords, length(worldPos * 0.001f));
 }

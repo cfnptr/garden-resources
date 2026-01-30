@@ -15,12 +15,16 @@
 // Physically based volumetric clouds.
 // Based on the Nubis clouds rendering system.
 
-#include "common/remap.gsl"
+#define USE_CAMERA_VOLUME
+
+spec const float STEP_ADJ_DIST = 16.384f;
+spec const float SLICE_COUNT = 8.0f;
+spec const float KM_PER_SLICE = 12.0f;
+
+#include "clouds/common.gsl"
 #include "common/depth.gsl"
 #include "common/constants.gsl"
 #include "atmosphere/common.gsl"
-
-spec const float STEP_ADJ_DIST = 16.384f;
 
 pipelineState
 {
@@ -28,8 +32,16 @@ pipelineState
 }
 
 in noperspective float2 fs.texCoords;
-out float4 fb.color;
 
+out float4 fb.color;
+out float4 fb.depth;
+
+uniform sampler2D hizBuffer;
+
+uniform sampler3D
+{
+	filter = linear;
+} cameraVolume;
 uniform sampler2D
 {
 	addressMode = repeat;
@@ -57,13 +69,10 @@ uniform pushConstants
 	float topRadius;
 	float minDistance;
 	float maxDistance;
+	float currentTime;
 	float coverage;
 	float temperature;
 } pc;
-
-//**********************************************************************************************************************
-float calcErosion(float value, float oldMin) { return saturate((value - oldMin) / (1.0f - oldMin)); }
-float3 calcProjSpherePoint(float3 samplePos) { return normalize(samplePos) * pc.bottomRadius; }
 
 float calcStepSize(float distance)
 {
@@ -71,92 +80,15 @@ float calcStepSize(float distance)
 	return fma(farStepOffset * distance, STEP_ADJ_DIST, nearStepSize);
 }
 
-float calcRelativeHeight(float3 samplePos, float invThickness)
-{
-	float3 projPos = calcProjSpherePoint(samplePos);
-	float relateiveHeight = fma(distance(samplePos, projPos), 
-		invThickness, max(pc.coverage * 0.6f, 0.2f));
-	return saturate(relateiveHeight);
-}
-float calcVerticalProfile(float3 cloudData, float relativeHeight)
-{
-	float topProfile = textureLod(verticalProfile, float2(min(cloudData.z, pc.temperature), relativeHeight), 0.0f).x;
-	float bottomProfile = textureLod(verticalProfile, float2(cloudData.x, relativeHeight), 0.0f).y;
-	return topProfile * bottomProfile;
-}
-float calcCloudCovergage(float3 cloudData)
-{
-	return saturate(remap(cloudData.y, pc.coverage, 1.0f, 0.0f, 1.0f));
-}
-
-float calcCloudMipLevel(float3 samplePos, float scale, float offset)
-{
-	return log2(fma(max(distance(pc.cameraPos, samplePos) + offset, 0.0f), scale, 1.0f));
-}
-float3 sampleDataFields(float3 samplePos)
-{
-	const float posScale = 0.05f;
-	float mipLod = calcCloudMipLevel(samplePos, 4.0f, -10.0f);
-	samplePos += cc.windDir * cc.currentTime * 0.01f;
-	#if defined(USE_TRIPLANAR_CLOUDS)
-	float3 weights = pow(abs(normalize(samplePos)), float3(4.0f));
-	weights /= (weights.x + weights.y + weights.z);
-	float3 x = textureLod(dataFields, samplePos.zy * posScale, mipLod).xyz;
-	float3 y = textureLod(dataFields, samplePos.xz * posScale, mipLod).xyz;
-	float3 z = textureLod(dataFields, samplePos.xy * posScale, mipLod).xyz;
-	return x * weights.x + y * weights.y + z * weights.z;
-	#else
-	return textureLod(dataFields, samplePos.xz * posScale, mipLod).xyz;
-	#endif
-}
-
-//**********************************************************************************************************************
-float calcCloudDensity(float3 samplePos, float3 cloudData, float dimProfile)
-{
-	float mipLod = calcCloudMipLevel(samplePos, 4.0f, -10.0f);
-	samplePos += cc.windDir.yzx * cc.currentTime * -0.001f;
-	float4 noise = textureLod(noiseShape, samplePos * 0.5f, mipLod);
-	float wispyNoise = lerp(noise.r, noise.g, dimProfile);
-	float billowyNoise = lerp(noise.b * 0.3f, noise.a * 0.3f, pow(dimProfile, 0.25f));
-	float noiseComposite = lerp(wispyNoise, billowyNoise, cloudData.z);
-	return calcErosion(dimProfile, noiseComposite);
-}
-
-float hgPhase(float cosTheta, float eccentricity) // Henyey Greenstein
-{
-	const float g2 = eccentricity * eccentricity;
-	float i = inversesqrt((1.0f + g2) - cosTheta * (eccentricity * 2.0f));
-	return (i * i * i) * ((1.0f - g2) * M_1_PI4);
-}
-float hgPhaseCloud(float cosTheta) // Emulates the sun silver lining highlights.
-{
-	const float eccentricity = 0.6f, silverIntens = 0.7f, silverSpread = 0.1f;
-	return max(hgPhase(cosTheta, eccentricity), hgPhase(cosTheta, 0.99f - silverSpread) * silverIntens);
-}
-
-float beerLambertCloud(float accumDensity, float cosTheta) 
-{
-	float transmission = exp(-accumDensity);
-	// HG makes far clouds too dark, clouds away from sun dir need extra scattering.
-	float modulated = max(transmission, exp(accumDensity * -0.25f) * 0.7f);
-	return mix(transmission, modulated, fma(cosTheta, -0.5f, 0.5f));
-}
-float calcMultiscattering(float hgMultiScat, float stepSize, float3 cloudData, 
-	float relativeHeight, float cloudCoverage, float dimProfile, float transmittacne)
-{
-	const float depthPower = 0.1f, heightPower = 2.0f;
-	return hgMultiScat * remapClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
-		pow(cloudCoverage * cloudData.z, 0.25f) * pow(transmittacne, depthPower) * pow(relativeHeight, heightPower);
-}
-
 //**********************************************************************************************************************
 void main()
 {
 	Ray ray = Ray(pc.cameraPos, calcViewDirection(fs.texCoords, cc.invViewProj));
 	float2 tRay = raycast2(Sphere(float3(0.0f), pc.topRadius), ray);
+
 	if (!isIntersected(tRay)) // No atmosphere intersection so no clouds.
 	{
-		fb.color = float4(0.0f);
+		fb.color = float4(0.0f); fb.depth = float4(0.0f);
 		return;
 	}
 	tRay.x = max(tRay.x, pc.minDistance); 
@@ -168,30 +100,35 @@ void main()
 			float2(max(tRay.x, tBottom.y), tRay.y) : float2(tRay.x, min(tRay.y, tBottom.x)); 
 	}
 
-	// TODO: sample depth buffer and update tMax.
+	float depth = textureLod(hizBuffer, fs.texCoords, 0.0f).r;
+	float3 worldPos = calcWorldPosition(depth, fs.texCoords, cc.invViewProj);
+	tRay.y = depth > 0.0f ? min(tRay.y, length(worldPos * 0.001f)) : tRay.y;
 
 	// Skipping ray if whole planet is behind us.
 	if (tRay.y <= tRay.x || tRay.x > pc.maxDistance)
 	{
-		fb.color = float4(0.0f);
+		fb.color = float4(0.0f); fb.depth = float4(0.0f);
 		return;
 	}
 
-	const float invThickness = 1.0f / (pc.topRadius - pc.bottomRadius);
+	float sunIntens = dot(cc.sunLight, cc.sunLight);
+	float invThickness = 1.0f / (pc.topRadius - pc.bottomRadius);
+	float3 fieldWindDir = calcFieldWindDir(cc.windDir, pc.currentTime);
+	float3 noiseWindDir = calcNoiseWindDir(cc.windDir, pc.currentTime);
 	float3 sunDir = -cc.lightDir; float cosTheta = dot(ray.direction, sunDir);
 	float hgScattering = hgPhaseCloud(cosTheta), hgMultiScat = hgPhase(cosTheta, 0.3f);
-	float lightAbsorption = 0.0f, directIntensity = 0.0f, ambientIntensity = 0.0f;
+	float lightAbsorption = 0.0f, directIntensity = 0.0f, ambientIntensity = 0.0f, distanceSum = 0.0f;
 	float stepMul = 3.0f; uint32 missCount = 0; bool fastMarching = true;
 
 	while (tRay.x < tRay.y && lightAbsorption < 1.0f)
 	{
 		float stepSize = calcStepSize(tRay.x) * stepMul; 
 		float3 samplePos = fma(ray.direction, float3(tRay.x), pc.cameraPos);
-		float3 cloudData = sampleDataFields(samplePos);
-		float relativeHeight = calcRelativeHeight(samplePos, invThickness);
-		float verticalProfile = calcVerticalProfile(cloudData, relativeHeight);
-		float cloudCoverage = calcCloudCovergage(cloudData);
-		float dimProfile = verticalProfile * cloudCoverage;
+		float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir);
+		float relativeHeight = calcRelativeHeight(pc.bottomRadius, pc.coverage, samplePos, invThickness);
+		float vertProfile = calcVerticalProfile(verticalProfile, pc.temperature, cloudData, relativeHeight);
+		float cloudCoverage = calcCloudCovergage(pc.coverage, cloudData);
+		float dimProfile = vertProfile * cloudCoverage;
 
 		if (dimProfile > 0.0f)
 		{
@@ -203,8 +140,21 @@ void main()
 				continue;
 			}
 
-			float cloudDensity = calcCloudDensity(samplePos, cloudData, dimProfile);
+			float cloudDensity = calcCloudDensity(noiseShape, pc.cameraPos, 
+				samplePos, cloudData, dimProfile, noiseWindDir);
 			if (cloudDensity < FLOAT_EPS6)
+			{
+				tRay.x += stepSize;
+				continue;
+			}
+
+			float occlustion = cloudDensity * (1.0f - lightAbsorption);
+			float attenuation = beerLambertCloud(cloudDensity * 10.0f, cosTheta);
+			float ambientScattering = pow(1.0f - dimProfile, 0.5f) * attenuation;
+			ambientIntensity += ambientScattering * occlustion;
+			lightAbsorption += occlustion; distanceSum += tRay.x * occlustion;
+
+			if (sunIntens < FLOAT_EPS6)
 			{
 				tRay.x += stepSize;
 				continue;
@@ -214,10 +164,12 @@ void main()
 			for (uint32 step = 0; step < 10; step++) // 256 meters with 10 samples
 			{
 				samplePos = fma(sunDir, float3(lightStep), samplePos);
-				float3 data = sampleDataFields(samplePos);
-				float height = calcRelativeHeight(samplePos, invThickness);
-				float profile = calcVerticalProfile(data, height) * calcCloudCovergage(data);
-				lightDensity += calcCloudDensity(samplePos, data, profile) * lightStep;
+				float3 data = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir);
+				float height = calcRelativeHeight(pc.bottomRadius, pc.coverage, samplePos, invThickness);
+				float profile = calcVerticalProfile(verticalProfile, pc.temperature, 
+					data, height) * calcCloudCovergage(pc.coverage, data);
+				lightDensity = fma(calcCloudDensity(noiseShape, pc.cameraPos, 
+					samplePos, data, profile, noiseWindDir), lightStep, lightDensity);
 				lightStep += lightStep * 1.3f;
 			}
 
@@ -225,13 +177,7 @@ void main()
 			float multiscattering = calcMultiscattering(hgMultiScat, stepSize, cloudData, 
 				relativeHeight, cloudCoverage, dimProfile, lightTransmittance);
 			float directScattering = fma(lightTransmittance, hgScattering, multiscattering);
-			float attenuation = beerLambertCloud(cloudDensity * 10.0f, cosTheta);
-			float ambientScattering = pow(1.0f - dimProfile, 0.5f) * attenuation;
-
-			float occlustion = cloudDensity * (1.0f - lightAbsorption);
 			directIntensity += directScattering * occlustion;
-			ambientIntensity += ambientScattering * occlustion;
-			lightAbsorption += occlustion;
 		}
 		else if (!fastMarching)
 		{
@@ -244,9 +190,28 @@ void main()
 
 		tRay.x += stepSize;
 	}
+
+	if (lightAbsorption < 1.0f)
+	{
+		// TODO: trace cirrus
+	}
 	lightAbsorption = min(lightAbsorption, 1.0f);
+	
+	// TODO: also support coloring by the storm lightnings.
+
+	if (lightAbsorption == 0.0f)
+	{
+		fb.color = float4(0.0f);
+		return;
+	}
+
+	worldPos = ray.direction * (distanceSum / lightAbsorption);
+	depth = calcDepth(worldPos * 1000.0f, cc.viewProj);
+	float4 ap = getAerialPerspLuminance(cameraVolume, fs.texCoords, length(worldPos));
 
 	float3 directLight = cc.sunLight * directIntensity;
 	float3 ambientLight = cc.ambientLight * ambientIntensity;
-	fb.color = float4(directLight + ambientLight, lightAbsorption);
+	float3 lightEnergy = lerp(directLight + ambientLight, ap.rgb, ap.a);
+	fb.color = float4(lightEnergy, lightAbsorption);
+	fb.depth = float4(depth, float3(0.0f));
 }

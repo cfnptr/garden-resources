@@ -21,6 +21,7 @@
 
 spec const float SLICE_COUNT = 8.0f;
 spec const float KM_PER_SLICE = 12.0f;
+spec const float SAMPLES_PER_SLICE = 2.0f;
 
 #include "common/depth.gsl"
 #include "common/constants.gsl"
@@ -91,10 +92,10 @@ void main()
 	float2 texCoords = (float2(gl.globalInvocationID.xy) + 0.5f) * (1.0f / CAMERA_VOLUME_LENGTH);
 	float3 worldDir = calcViewDirection(texCoords, cc.invViewProj);
 	float slice = (float(gl.globalInvocationID.z) + 0.5f) * (1.0f / SLICE_COUNT);
-	slice = slice * slice * SLICE_COUNT;
+	slice = slice * slice * SLICE_COUNT; // Squared slice distribution.
 
 	// Compute position from froxel information.
-	float tMaxMax = aerialPerspSliceToDepth(slice);
+	float tMaxMax = slice * KM_PER_SLICE;
 	float3 newWorldPos = fma(float3(tMaxMax), worldDir, pc.cameraPos);
 
 	// If the voxel is under the ground, make sure to offset it out on the ground.
@@ -125,8 +126,9 @@ void main()
 		// Now world position has been moved to the atmosphere boundary, we need to reduce tMaxMax accordingly. 
 		tMaxMax = max(0.0f, tMaxMax - lengthToAtmosphere);
 	}
+	// TODO: fix flickering at the horizon level! <---
 
-	float sampleCount = max(1.0f, float(gl.globalInvocationID.z + 1) * 2.0f);
+	float sampleCount = max(1.0f, float(gl.globalInvocationID.z + 1) * SAMPLES_PER_SLICE);
 	ScatteringResult result = integrateScatteredLuminance(texCoords, Ray(worldPos, 
 		worldDir), pc.sunDir, atmosphere, sampleCount, tMaxMax, transLUT, multiScatLUT);
 	float4 color = float4(result.l, 1.0f - dot(result.transmittance, float3(1.0f / 3.0f)));

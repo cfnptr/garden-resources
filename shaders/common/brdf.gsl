@@ -23,6 +23,7 @@
 
 #define MIN_ROUGHNESS 0.045f
 
+// Walter et al. 2007, "Microfacet Models for Refraction through Rough Surfaces"
 float ggx(float noh, float linearRoughness)
 {
 	float oneMinusNohSquared = 1.0f - noh * noh;
@@ -30,6 +31,8 @@ float ggx(float noh, float linearRoughness)
 	float k = linearRoughness / fma(a, a, oneMinusNohSquared);
 	return k * k * float(M_1_PI);
 }
+
+// Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
 float smithGGXCorrelated(float nov, float nol, float linearRoughness)
 {
 	float a2 = linearRoughness * linearRoughness;
@@ -38,6 +41,13 @@ float smithGGXCorrelated(float nov, float nol, float linearRoughness)
 	return 0.5f / (lambdaV + lambdaL);
 }
 
+// Kelemen 2001, "A Microfacet Based Coupled Specular-Matte BRDF Model with Importance Sampling"
+float kelemen(float loh) { return 0.25f / (loh * loh); }
+
+// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+float neubelt(float nov, float nol) { return 1.0f / ((nol + nov - nol * nov) * 4.0f); }
+
+// Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"
 float schlick(float voh, float f0, float f90)
 {
 	return fma(pow(1.0f - voh, 5.0f), f90 - f0, f0);
@@ -49,6 +59,7 @@ float3 schlick(float voh, float3 f0, float f90)
 
 float lambert() { return float(M_1_PI); }
 
+// Burley 2012, "Physically-Based Shading at Disney"
 float burley(float perceptualRoughness, float nov, float nol, float loh)
 {
 	float f90 = fma(perceptualRoughness * loh * loh, 2.0f, 0.5f);

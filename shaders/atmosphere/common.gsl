@@ -168,8 +168,16 @@ float3 getTransmittance(sampler2D transLUT, Ray ray, float bottomRadius, float t
 }
 
 #ifdef USE_CAMERA_VOLUME
-float aerialPersDepthToSlice(float depth) { return depth * (1.0f / KM_PER_SLICE); }
-float aerialPerspSliceToDepth(float slice) { return slice * KM_PER_SLICE; }
+float4 getAerialPerspLuminance(sampler3D cameraVolume, float2 texCoords, float depth)
+{
+	float slice = depth * (1.0f / KM_PER_SLICE);
+	float w = sqrt(slice * (1.0f / SLICE_COUNT)); // Squared slice distribution.
+	float sliceSqrt = w * SLICE_COUNT;
+
+	// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
+	float weight = sliceSqrt < M_SQRT1_2 ? saturate(sliceSqrt * sliceSqrt * 2.0f) : 1.0f;
+	return textureLod(cameraVolume, float3(texCoords, w), 0.0f) * weight;
+}
 #endif
 
 //**********************************************************************************************************************
