@@ -83,9 +83,9 @@ void main()
 	float2 texCoords = (float2(gl.globalInvocationID.xy) + 0.5f) * (1.0f / MULTI_SCAT_LUT_LENGTH);
 	texCoords = (texCoords - 0.5f / MULTI_SCAT_LUT_LENGTH) * (MULTI_SCAT_LUT_LENGTH / (MULTI_SCAT_LUT_LENGTH - 1.0f));
 
-	float cosSunZenithAngle = fma(texCoords.x, 2.0f, -1.0f);
-	float3 sunDir = normalize(float3(0.0f, cosSunZenithAngle, sqrt(
-		saturate(1.0f - cosSunZenithAngle * cosSunZenithAngle))));
+	float cosStarZenithAngle = fma(texCoords.x, 2.0f, -1.0f);
+	float3 starDir = normalize(float3(0.0f, cosStarZenithAngle, sqrt(
+		saturate(1.0f - cosStarZenithAngle * cosStarZenithAngle))));
 	// We adjust again viewHeight according to PLANET_RADIUS_OFFSET to be in a valid range.
 	float viewHeight = atmosphere.bottomRadius + saturate(texCoords.y + PLANET_RADIUS_OFFSET) * 
 		(atmosphere.topRadius - atmosphere.bottomRadius - PLANET_RADIUS_OFFSET);
@@ -101,7 +101,7 @@ void main()
 	float3 worldDir = normalize(float3(cosThetaPhi.x * sinThetaPhi.y, cosThetaPhi.y, sinThetaPhi.x * sinThetaPhi.y));
 
 	ScatteringResult result = integrateScatteredLuminance(texCoords, Ray(float3(0.0f, viewHeight, 
-		0.0f), worldDir), sunDir, atmosphere, SAMPLE_COUNT, DEFAULT_T_MAX_MAX, transLUT);
+		0.0f), worldDir), starDir, atmosphere, SAMPLE_COUNT, DEFAULT_T_MAX_MAX, transLUT);
 
 	const float sphereSolidAngle = float(4.0 * M_PI);
 	multiScatAs1Shared[gl.localInvocationID.z] = result.multiScatAs1 * 

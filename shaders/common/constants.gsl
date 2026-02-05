@@ -32,7 +32,7 @@
 	float deltaTime;         \
 	float3 lightDir;         \
 	float emissiveCoeff;     \
-	float3 sunLight;         \
+	float3 starLight;        \
 	float anglePerPixel;     \
 	float3 ambientLight;     \
 	float mipLodBias;        \

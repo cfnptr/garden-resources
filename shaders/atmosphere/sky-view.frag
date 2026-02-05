@@ -55,7 +55,7 @@ uniform pushConstants
 	float miePhaseG;
 	float3 mieScattering;
 	float absDensity0LayerWidth;
-	float3 sunDir;
+	float3 starDir;
 	float absDensity0ConstantTerm;
 	float3 cameraPos;
 	float absDensity0LinearTerm;
@@ -115,8 +115,8 @@ void main()
 	float viewHeight = length(pc.cameraPos); float viewZenithCosAngle; float lightViewCosAngle;
 	uvToSkyView(atmosphere.bottomRadius, viewHeight, fs.texCoords, viewZenithCosAngle, lightViewCosAngle);
 
-	float3 upVector = pc.cameraPos / viewHeight; float sunZenithCosAngle = dot(upVector, pc.sunDir);
-	float3 sunDir = normalize(float3(sqrt(1.0f - sunZenithCosAngle * sunZenithCosAngle), sunZenithCosAngle, 0.0f));
+	float3 upVector = pc.cameraPos / viewHeight; float starZenithCosAngle = dot(upVector, pc.starDir);
+	float3 starDir = normalize(float3(sqrt(1.0f - starZenithCosAngle * starZenithCosAngle), starZenithCosAngle, 0.0f));
 	float3 worldPos = float3(0.0f, viewHeight, 0.0f);
 	float viewZenithSinAngle = sqrt(1.0f - viewZenithCosAngle * viewZenithCosAngle);
 	float3 worldDir = normalize(float3(viewZenithSinAngle * lightViewCosAngle, viewZenithCosAngle,
@@ -128,6 +128,6 @@ void main()
 	}
 
 	ScatteringResult result = integrateScatteredLuminance(fs.texCoords, Ray(worldPos, 
-		worldDir), sunDir, atmosphere, 0.0f, DEFAULT_T_MAX_MAX, transLUT, multiScatLUT);
+		worldDir), starDir, atmosphere, 0.0f, DEFAULT_T_MAX_MAX, transLUT, multiScatLUT);
 	fb.color = float4(result.l, 1.0f);
 }

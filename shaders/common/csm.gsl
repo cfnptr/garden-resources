@@ -24,9 +24,10 @@
 #define SHADOW_MAP_SAMPLE_COUNT 8
 
 #define SHADOW_MAP_DATA                           \
+	float4x4 viewProj[SHADOW_MAP_CASCADE_COUNT];  \
 	float4x4 uvToLight[SHADOW_MAP_CASCADE_COUNT]; \
 	float4 farPlanes;                             \
-	float3 sunDir;                                \
+	float3 starDir;                               \
 	float normBias;                               \
 
 const float2 poissonDisk[SHADOW_MAP_SAMPLE_COUNT] = float2[]
@@ -61,18 +62,18 @@ uint32 computeCsmCascadeID(float3 farPlanes, float pixelDepth)
 	}
 	return 0;
 }
-float computeCsmOffsetZ(float3 sunDir, float3 normal, float bias)
+float computeCsmOffsetZ(float3 starDir, float3 normal, float bias)
 {
-	return (1.0f - saturate(dot(normal, sunDir))) * bias;
+	return (1.0f - saturate(dot(normal, starDir))) * bias;
 }
 
 void computeCsmData(float4x4 uvToLight[SHADOW_MAP_CASCADE_COUNT], float2 texCoords, float pixelDepth, 
-	float3 farPlanes, float3 sunDir, float bias, float3 normal, out uint32 cascadeID, out float3 lightCoords)
+	float3 farPlanes, float3 starDir, float bias, float3 normal, out uint32 cascadeID, out float3 lightCoords)
 {
 	cascadeID = computeCsmCascadeID(farPlanes, pixelDepth);
 	float4 lightProj = uvToLight[cascadeID] * float4(texCoords, pixelDepth, 1.0f);
 	lightCoords = lightProj.xyz / lightProj.w;
-	lightCoords.z += computeCsmOffsetZ(sunDir, normal, bias);
+	lightCoords.z += computeCsmOffsetZ(starDir, normal, bias);
 }
 
 //**********************************************************************************************************************
@@ -97,7 +98,7 @@ float evaluateCsmShadow(sampler2DArrayShadow depthMap, uint32 cascadeID, float3 
 
 	for (int32 i = 0; i < SHADOW_MAP_SAMPLE_COUNT; i++)
 	{
-		float2 texCoords = rotation * poissonDisk[i] * texelSize + lightCoords.xy;
+		float2 texCoords = fma(rotation * poissonDisk[i], texelSize, lightCoords.xy);
 		shadow += texture(depthMap, float4(texCoords, cascadeID, lightCoords.z));
 	}
 
@@ -115,7 +116,7 @@ float4 evaluateCsmTransparency(sampler2DArray transparentMap, uint32 cascadeID, 
 
 	for (int32 i = 0; i < SHADOW_MAP_SAMPLE_COUNT; i++)
 	{
-		float2 texCoords = rotation * poissonDisk[i] * texelSize + lightCoords.xy;
+		float2 texCoords = fma(rotation * poissonDisk[i], texelSize, lightCoords.xy);
 		transparency += texture(transparentMap, float3(texCoords, cascadeID));
 	}
 

@@ -182,7 +182,7 @@ float4 getAerialPerspLuminance(sampler3D cameraVolume, float2 texCoords, float d
 
 //**********************************************************************************************************************
 ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray, 
-	float3 sunDir, const AtmosphereParams atmosphere, float sampleCountInit, float tMaxMax
+	float3 starDir, const AtmosphereParams atmosphere, float sampleCountInit, float tMaxMax
 	#ifdef USE_TRANSMITTANCE_LUT
 	, sampler2D transLUT
 	#endif
@@ -227,7 +227,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 
 	#ifdef USE_TRANSMITTANCE_LUT
 	const float uniformPhase = 1.0f / float(4.0 * M_PI);
-	float cosTheta = dot(sunDir, ray.direction);
+	float cosTheta = dot(starDir, ray.direction);
 	// Negate cosTheta because due to ray.direction being a "in" direction.
 	float miePhaseValue = miePhase(atmosphere.miePhaseG, -cosTheta);	
 	float rayleighPhaseValue = rayleighPhase(cosTheta);
@@ -255,7 +255,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 
 		float3 p = fma(float3(t), ray.direction, ray.origin);
 		float pHeight = length(p); float3 upVector = p / pHeight;
-		float sunZenithCosAngle = dot(sunDir, upVector);
+		float starZenithCosAngle = dot(starDir, upVector);
 		MediumSampleRGB medium = sampleMediumRGB(atmosphere, pHeight);
 		float3 sampleOpticalDepth = medium.extinction * deltaT;
 		float3 sampleTransmittance = exp(-sampleOpticalDepth);
@@ -263,15 +263,15 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 
 		#ifdef USE_MULTI_SCATTERING_LUT
 		float3 multiScatLuminance = getMultipleScattering(multiScatLUT, 
-			atmosphere.bottomRadius, atmosphere.topRadius, pHeight, sunZenithCosAngle);
+			atmosphere.bottomRadius, atmosphere.topRadius, pHeight, starZenithCosAngle);
 		#else
 		const float3 multiScatLuminance = float3(0.0f);
 		#endif
 
 		#ifdef USE_TRANSMITTANCE_LUT
 		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, 
-			atmosphere.topRadius, pHeight, sunZenithCosAngle);
-		float3 transmittanceToSun = textureLod(transLUT, uv, 0.0f).rgb;
+			atmosphere.topRadius, pHeight, starZenithCosAngle);
+		float3 transmittanceToStar = textureLod(transLUT, uv, 0.0f).rgb;
 
 		#ifdef USE_SCAT_MIE_RAY_PHASE
 		float3 phaseTimesScattering = medium.scatteringMie * 
@@ -281,7 +281,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		#endif
 
 		float planetShadow = raycast(Sphere(upVector * PLANET_RADIUS_OFFSET, 
-			atmosphere.bottomRadius), Ray(p, sunDir)) ? 0.0f : 1.0f;
+			atmosphere.bottomRadius), Ray(p, starDir)) ? 0.0f : 1.0f;
 
 		#if USE_ATMOSPHERE_SHADOWS
 		float shadow = getShadow(atmosphere, p);
@@ -289,7 +289,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		const float shadow = 1.0f;
 		#endif
 
-		float3 s = globalL * (planetShadow * shadow * transmittanceToSun * 
+		float3 s = globalL * (planetShadow * shadow * transmittanceToStar * 
 			phaseTimesScattering + multiScatLuminance * medium.scattering);
 		// 1 is the integration of luminance over the 4pi of a sphere, with isotropic phase function of 1 / (4 * PI).
 		result.multiScatAs1 += throughput * medium.scattering * deltaT;
@@ -307,12 +307,12 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		// Account for bounced light off the planet
 		float3 p = fma(float3(tBottom), ray.direction, ray.origin);
 		float pHeight = length(p); float3 upVector = p / pHeight;
-		float sunZenithCosAngle = dot(sunDir, upVector);
+		float starZenithCosAngle = dot(starDir, upVector);
 		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, 
-			atmosphere.topRadius, pHeight, sunZenithCosAngle);
-		float3 transmittanceToSun = textureLod(transLUT, uv, 0.0f).rgb;
-		float nol = saturate(dot(normalize(upVector), normalize(sunDir)));
-		l += globalL * transmittanceToSun * throughput * nol * atmosphere.groundAlbedo * float(M_1_PI);
+			atmosphere.topRadius, pHeight, starZenithCosAngle);
+		float3 transmittanceToStar = textureLod(transLUT, uv, 0.0f).rgb;
+		float nol = saturate(dot(normalize(upVector), normalize(starDir)));
+		l += globalL * transmittanceToStar * throughput * nol * atmosphere.groundAlbedo * float(M_1_PI);
 	}
 	#endif
 

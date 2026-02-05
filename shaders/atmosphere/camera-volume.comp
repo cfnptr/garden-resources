@@ -55,7 +55,7 @@ uniform pushConstants
 	float miePhaseG;
 	float3 mieScattering;
 	float absDensity0LayerWidth;
-	float3 sunDir;
+	float3 starDir;
 	float absDensity0ConstantTerm;
 	float3 cameraPos;
 	float absDensity0LinearTerm;
@@ -130,7 +130,7 @@ void main()
 
 	float sampleCount = max(1.0f, float(gl.globalInvocationID.z + 1) * SAMPLES_PER_SLICE);
 	ScatteringResult result = integrateScatteredLuminance(texCoords, Ray(worldPos, 
-		worldDir), pc.sunDir, atmosphere, sampleCount, tMaxMax, transLUT, multiScatLUT);
+		worldDir), pc.starDir, atmosphere, sampleCount, tMaxMax, transLUT, multiScatLUT);
 	float4 color = float4(result.l, 1.0f - dot(result.transmittance, float3(1.0f / 3.0f)));
 	imageStore(cameraVolume, int3(gl.globalInvocationID), color);
 }

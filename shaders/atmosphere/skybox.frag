@@ -52,10 +52,10 @@ uniform pushConstants
 	float4x4 invViewProj;
 	float3 cameraPos;
 	float bottomRadius;
-	float3 sunDir;
+	float3 starDir;
 	float topRadius;
-	float3 sunColor;
-	float sunSize;
+	float3 starColor;
+	float starSize;
 } pc;
 
 //**********************************************************************************************************************
@@ -81,14 +81,14 @@ float2 skyViewToUv(bool intersectGround, float viewZenithCosAngle, float lightVi
 	return (uv + 0.5f / skyViewSize) * (skyViewSize / (skyViewSize + 1.0f));
 }
 
-float3 getSunLuminance(float3 worldDir, bool intersectGround)
+float3 getStarLuminance(float3 worldDir, bool intersectGround)
 {
-	// Note: No early exit to smooth the sun disk.
+	// Note: No early exit to smooth the star disk.
 	if (intersectGround)
 		return float3(0.0f);
 	float3 transmittance = getTransmittance(transLUT, Ray(pc.cameraPos, worldDir), pc.bottomRadius, pc.topRadius);
-	float sunDisk = saturate(((dot(worldDir, pc.sunDir) - pc.sunSize) * 2.0f) / (1.0f - pc.sunSize));
-	return transmittance * pc.sunColor * sunDisk;
+	float starDisk = saturate(((dot(worldDir, pc.starDir) - pc.starSize) * 2.0f) / (1.0f - pc.starSize));
+	return transmittance * pc.starColor * starDisk;
 }
 
 void main()
@@ -100,14 +100,14 @@ void main()
 	{
 		float3 upVector = normalize(pc.cameraPos); float viewZenithCosAngle = dot(worldDir, upVector);
 		float3 sideVector = normalize(cross(upVector, worldDir));
-		// Aligns toward the sun light but perpendicular to up vector.
+		// Aligns toward the star light but perpendicular to up vector.
 		float3 forwardVector = normalize(cross(sideVector, upVector));
-		float2 lightOnPlane = normalize(float2(dot(pc.sunDir, forwardVector), dot(pc.sunDir, sideVector)));
+		float2 lightOnPlane = normalize(float2(dot(pc.starDir, forwardVector), dot(pc.starDir, sideVector)));
 		float lightViewCosAngle = lightOnPlane.x;
 
 		bool intersectGround = raycast(Sphere(float3(0.0f), pc.bottomRadius), Ray(pc.cameraPos, worldDir));
 		float2 uv = skyViewToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewHeight);
-		float3 skyColor = textureLod(skyViewLUT, uv, 0.0f).rgb + getSunLuminance(worldDir, intersectGround);
+		float3 skyColor = textureLod(skyViewLUT, uv, 0.0f).rgb + getStarLuminance(worldDir, intersectGround);
 		fb.color = float4(min(skyColor, float3(FLOAT_BIG_16)), 1.0f);
 		return;
 	}

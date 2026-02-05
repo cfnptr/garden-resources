@@ -36,7 +36,7 @@ uniform pushConstants
 	float mieDensityExpScale;
 	float3 absorptionExtinction;
 	float absDensity0LayerWidth;
-	float3 sunDir;
+	float3 starDir;
 	float absDensity0ConstantTerm;
 	float absDensity0LinearTerm;
 	float absDensity1ConstantTerm;
@@ -86,6 +86,6 @@ void main()
 
 	AtmosphereParams atmosphere = getAtmosphereParams();
 	float3 transmittance = exp(-integrateScatteredLuminance(fs.texCoords, Ray(float3(0.0f, viewHeight, 
-		0.0f), worldDir), pc.sunDir, atmosphere, SAMPLE_COUNT, DEFAULT_T_MAX_MAX).opticalDepth);
+		0.0f), worldDir), pc.starDir, atmosphere, SAMPLE_COUNT, DEFAULT_T_MAX_MAX).opticalDepth);
 	fb.trans = float4(transmittance, 1.0f);
 }
