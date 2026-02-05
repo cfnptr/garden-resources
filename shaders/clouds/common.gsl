@@ -39,15 +39,14 @@ float calcCloudCovergage(float coverage, float3 cloudData)
 }
 
 float3 calcFieldWindDir(float3 windDir, float currentTime) { return windDir * (currentTime * 0.01f); }
-float3 calcNoiseWindDir(float3 windDir, float currentTime) { return windDir.yzx * (currentTime * -0.001f); }
+float3 calcShapeWindDir(float3 windDir, float currentTime) { return windDir.yzx * (currentTime * -0.001f); }
 
 float calcCloudMipLevel(float3 cameraPos, float3 samplePos, float scale, float offset)
 {
 	return log2(fma(max(distance(cameraPos, samplePos) + offset, 0.0f), scale, 1.0f));
 }
-float3 sampleDataFields(sampler2D dataFields, float3 cameraPos, float3 samplePos, float3 windDir)
+float3 sampleDataFields(sampler2D dataFields, float3 cameraPos, float3 samplePos, float3 windDir, float posScale)
 {
-	const float posScale = 0.05f;
 	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 2.0f, -15.0f);
 	samplePos += windDir;
 
@@ -60,6 +59,23 @@ float3 sampleDataFields(sampler2D dataFields, float3 cameraPos, float3 samplePos
 	return x * weights.x + y * weights.y + z * weights.z;
 	#else
 	return textureLod(dataFields, samplePos.xz * posScale, mipLod).xyz;
+	#endif
+}
+float3 sampleCirrusShape(sampler2D cirrusShape, float3 cameraPos, float3 samplePos, float3 windDir)
+{
+	const float posScale = 0.25f;
+	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 1.5f, -5.0f);
+	samplePos += windDir;
+
+	#if defined(USE_TRIPLANAR_CLOUDS)
+	float3 weights = pow(abs(normalize(samplePos)), float3(4.0f));
+	weights /= (weights.x + weights.y + weights.z);
+	float3 x = textureLod(cirrusShape, samplePos.zy * posScale, mipLod).xyz;
+	float3 y = textureLod(cirrusShape, samplePos.xz * posScale, mipLod).xyz;
+	float3 z = textureLod(cirrusShape, samplePos.xy * posScale, mipLod).xyz;
+	return x * weights.x + y * weights.y + z * weights.z;
+	#else
+	return textureLod(cirrusShape, samplePos.xz * posScale, mipLod).xyz;
 	#endif
 }
 
@@ -75,6 +91,26 @@ float calcCloudDensity(sampler3D noiseShape, float3 cameraPos,
 	return calcErosion(dimProfile, noiseComposite);
 }
 
+float valueRemap(float value, float oldMin, float oldMax, float newMin, float newMax)
+{
+	const float oldMinMaxRange = (oldMax - oldMin);
+	float clampedNormalized = saturate((value - oldMin) / oldMinMaxRange);
+	return fma(clampedNormalized, (newMax - newMin), newMin);
+}
+float valueRemapConst(float value, float oldMin, float oldMax, float newMin, float newMax)
+{
+	const float oldMinMaxRange = 1.0f / (oldMax - oldMin);
+	float clampedNormalized = saturate((value - oldMin) * oldMinMaxRange);
+	return fma(clampedNormalized, (newMax - newMin), newMin);
+}
+float calcCirrusDensity(float3 cloudData, float3 cirrusShape, float cloudCoverage)
+{
+	float density = valueRemap(cloudData.z, 0.5f, 1.0f, valueRemap(cloudData.z, 
+		0.0f, 0.5f, cirrusShape.x, cirrusShape.y), cirrusShape.z);
+	density = pow(density, 1.0f - valueRemapConst(cloudCoverage, 0.0f, 1.0f, -0.9f, 0.9f));
+	return saturate(density * valueRemapConst(pow(cloudCoverage, 3.0f), 0.0f, 0.5f, 0.0f, 1.0f));
+}
+
 float hgPhase(float cosTheta, float eccentricity) // Henyey Greenstein
 {
 	const float g2 = eccentricity * eccentricity;
@@ -87,7 +123,7 @@ float hgPhaseCloud(float cosTheta) // Emulates the sun silver lining highlights.
 	return max(hgPhase(cosTheta, eccentricity), hgPhase(cosTheta, 0.99f - silverSpread) * silverIntens);
 }
 
-// HG makes far clouds too dark, clouds away from sun dir need extra scattering.
+// HG makes far clouds too dark, clouds away from star direction need extra scattering.
 float beerLambertCloud(float accumDensity, float cosTheta) 
 {
 	float transmission = exp(-accumDensity);
@@ -97,8 +133,8 @@ float beerLambertCloud(float accumDensity, float cosTheta)
 float calcMultiscattering(float hgMultiScat, float stepSize, float3 cloudData, 
 	float relativeHeight, float cloudCoverage, float dimProfile, float transmittacne)
 {
-	const float depthPower = 0.1f, heightPower = 2.0f;
-	return hgMultiScat * remapClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
+	const float depthPower = 0.01f, heightPower = 1.2f;
+	return hgMultiScat * remapConstClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
 		pow(cloudCoverage * cloudData.z, 0.25f) * pow(transmittacne, depthPower) * pow(relativeHeight, heightPower);
 }
 

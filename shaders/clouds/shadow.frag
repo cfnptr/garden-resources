@@ -13,11 +13,15 @@
 // limitations under the License.
 
 #include "common/depth.gsl"
+#include "common/sphere.gsl"
+#include "clouds/common.gsl"
 
 pipelineState
 {
 	faceCulling = off;
 	blending0 = on;
+	srcAlphaFactor0 = dstAlpha;
+	colorMask0 = a;
 }
 
 in noperspective float2 fs.texCoords;
@@ -30,18 +34,16 @@ uniform sampler2D
 	addressMode = repeat;
 	filter = linear;
 } dataFields;
-uniform sampler2D
-{
-	filter = linear;
-} verticalProfile;
 
 uniform pushConstants
 {
 	float4x4 invViewProj;
 	float3 cameraPos;
 	float bottomRadius;
+	float3 starDir;
 	float currentTime;
-	float coverage;
+	float3 windDir;
+	float cumulusCoverage;
 	float temperature;
 } pc;
 
@@ -52,17 +54,15 @@ void main()
 	if (depth == FAR_PLANE_DEPTH)
 		discard;
 
-	Ray ray = Ray(pc.cameraPos, calcViewDirection(fs.texCoords, pc.invViewProj));
-	float2 tRay = raycast2(Sphere(float3(0.0f), pc.bottomRadius), ray);
-
-	if (!isIntersected(tRay)) // No bottom cloud layer intersection.
+	float3 worldPos = fma(calcWorldPosition(depth, fs.texCoords, pc.invViewProj), float3(0.001f), pc.cameraPos);
+	float2 rayT = raycast2(Sphere(float3(0.0f), pc.bottomRadius), Ray(worldPos, pc.starDir));
+	
+	if (!isIntersected(rayT)) // No bottom cloud layer intersection.
 		discard;
 
-	float t = tRay.x < tRay.y ? tRay.y : tRay.x;
-	float3 samplePos = fma(ray.direction, float3(t), pc.cameraPos);
-	float3 fieldWindDir = calcFieldWindDir(cc.windDir, pc.currentTime);
-	float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir);
-	float vertProfile = calcVerticalProfile(verticalProfile, pc.temperature, cloudData, 0.0f);
-	float cloudCoverage = calcCloudCovergage(pc.coverage, cloudData);
-	fb.shadow = float4(float3(1.0f), vertProfile * cloudCoverage);
+	float3 samplePos = fma(pc.starDir, float3(rayT.x < 0.0f ? rayT.y : rayT.x), pc.cameraPos);
+	float3 fieldWindDir = calcFieldWindDir(pc.windDir, pc.currentTime);
+	float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.02f);
+	float shadow = saturate(0.5f - calcCloudCovergage(pc.cumulusCoverage, cloudData) * pc.temperature);
+	fb.shadow = float4(float3(1.0f), shadow);
 }

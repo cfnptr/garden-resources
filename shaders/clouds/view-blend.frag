@@ -16,11 +16,12 @@ pipelineState
 {
 	faceCulling = off;
 	blending0 = on;
-	depthTesting = on;
 }
 
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
+
+uniform sampler2D depthBuffer;
 
 uniform sampler2D 
 {
@@ -29,11 +30,17 @@ uniform sampler2D
 uniform sampler2D 
 {
 	filter = linear;
-} depthBuffer;
+} cloudsDepth;
 
 void main()
 {
-	fb.color = textureLod(cloudsBuffer, fs.texCoords, 0.0f);
-	gl.fragDepth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
-	// TODO: somehow fix hard edge
+	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
+	float cloudsDepth = textureLod(cloudsDepth, fs.texCoords, 0.0f).x;
+	if (depth > cloudsDepth)
+		discard;
+
+	float4 color = textureLod(cloudsBuffer, fs.texCoords, 0.0f);
+	if (depth > 0.0f) // Smoothing sharp transition.
+		color.a *= saturate((cloudsDepth - depth) * 1000000.0f);
+	fb.color = color;
 }

@@ -56,6 +56,11 @@ uniform sampler3D
 	addressMode = repeat;
 	filter = linear;
 } noiseShape;
+uniform sampler2D
+{
+	addressMode = repeat;
+	filter = linear;
+} cirrusShape;
 
 uniform CommonConstants
 {
@@ -70,7 +75,8 @@ uniform pushConstants
 	float minDistance;
 	float maxDistance;
 	float currentTime;
-	float coverage;
+	float cumulusCoverage;
+	float cirrusCoverage;
 	float temperature;
 } pc;
 
@@ -84,50 +90,51 @@ float calcStepSize(float distance)
 void main()
 {
 	Ray ray = Ray(pc.cameraPos, calcViewDirection(fs.texCoords, cc.invViewProj));
-	float2 tRay = raycast2(Sphere(float3(0.0f), pc.topRadius), ray);
-
-	if (!isIntersected(tRay)) // No atmosphere intersection so no clouds.
+	float2 rayT = raycast2(Sphere(float3(0.0f), pc.topRadius), ray);
+	if (!isIntersected(rayT)) // No atmosphere intersection so no clouds.
 	{
 		fb.color = float4(0.0f); fb.depth = float4(0.0f);
 		return;
 	}
-	tRay.x = max(tRay.x, pc.minDistance); 
 
-	float2 tBottom = raycast2(Sphere(float3(0.0f), pc.bottomRadius), ray);
-	if (isIntersected(tBottom)) // Intesecting bottom clouds sphere.
+	float cirrusT = rayT.x < 0.0f ? rayT.y : rayT.x;
+	rayT.x = max(rayT.x, pc.minDistance); 
+
+	float2 bottomT = raycast2(Sphere(float3(0.0f), pc.bottomRadius), ray);
+	if (isIntersected(bottomT)) // Intesecting bottom clouds sphere.
 	{
-		tRay = tBottom.x < 0.0f ? // Is camera below bottom clouds level?
-			float2(max(tRay.x, tBottom.y), tRay.y) : float2(tRay.x, min(tRay.y, tBottom.x)); 
+		rayT = bottomT.x < 0.0f ? // Is camera below bottom clouds level?
+			float2(max(rayT.x, bottomT.y), rayT.y) : float2(rayT.x, min(rayT.y, bottomT.x)); 
 	}
 
 	float depth = textureLod(hizBuffer, fs.texCoords, 0.0f).r;
 	float3 worldPos = calcWorldPosition(depth, fs.texCoords, cc.invViewProj);
-	tRay.y = depth > 0.0f ? min(tRay.y, length(worldPos * 0.001f)) : tRay.y;
+	rayT.y = depth > 0.0f ? min(rayT.y, length(worldPos * 0.001f)) : rayT.y;
 
 	// Skipping ray if whole planet is behind us.
-	if (tRay.y <= tRay.x || tRay.x > pc.maxDistance)
+	if (rayT.y <= rayT.x || rayT.x > pc.maxDistance)
 	{
 		fb.color = float4(0.0f); fb.depth = float4(0.0f);
 		return;
 	}
 
-	float sunIntens = dot(cc.sunLight, cc.sunLight);
+	float starIntens = dot(cc.starLight, cc.starLight);
 	float invThickness = 1.0f / (pc.topRadius - pc.bottomRadius);
 	float3 fieldWindDir = calcFieldWindDir(cc.windDir, pc.currentTime);
-	float3 noiseWindDir = calcNoiseWindDir(cc.windDir, pc.currentTime);
-	float3 sunDir = -cc.lightDir; float cosTheta = dot(ray.direction, sunDir);
+	float3 shapeWindDir = calcShapeWindDir(cc.windDir, pc.currentTime);
+	float3 starDir = -cc.lightDir; float cosTheta = dot(ray.direction, starDir);
 	float hgScattering = hgPhaseCloud(cosTheta), hgMultiScat = hgPhase(cosTheta, 0.3f);
 	float lightAbsorption = 0.0f, directIntensity = 0.0f, ambientIntensity = 0.0f, distanceSum = 0.0f;
 	float stepMul = 3.0f; uint32 missCount = 0; bool fastMarching = true;
 
-	while (tRay.x < tRay.y && lightAbsorption < 1.0f)
+	while (rayT.x < rayT.y && lightAbsorption < 1.0f)
 	{
-		float stepSize = calcStepSize(tRay.x) * stepMul; 
-		float3 samplePos = fma(ray.direction, float3(tRay.x), pc.cameraPos);
-		float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir);
-		float relativeHeight = calcRelativeHeight(pc.bottomRadius, pc.coverage, samplePos, invThickness);
+		float stepSize = calcStepSize(rayT.x) * stepMul; 
+		float3 samplePos = fma(ray.direction, float3(rayT.x), pc.cameraPos);
+		float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.02f);
+		float relativeHeight = calcRelativeHeight(pc.bottomRadius, pc.cumulusCoverage, samplePos, invThickness);
 		float vertProfile = calcVerticalProfile(verticalProfile, pc.temperature, cloudData, relativeHeight);
-		float cloudCoverage = calcCloudCovergage(pc.coverage, cloudData);
+		float cloudCoverage = calcCloudCovergage(pc.cumulusCoverage, cloudData);
 		float dimProfile = vertProfile * cloudCoverage;
 
 		if (dimProfile > 0.0f)
@@ -135,45 +142,47 @@ void main()
 			missCount = 0;
 			if (fastMarching) // Starting high resolution ray marching.
 			{
-				tRay.x -= stepSize; // Go back one step to not miss any high res samples.
+				rayT.x -= stepSize; // Go back one step to not miss any high res samples.
 				stepMul = 1.0f; fastMarching = false;
 				continue;
 			}
 
 			float cloudDensity = calcCloudDensity(noiseShape, pc.cameraPos, 
-				samplePos, cloudData, dimProfile, noiseWindDir);
+				samplePos, cloudData, dimProfile, shapeWindDir);
 			if (cloudDensity < FLOAT_EPS6)
 			{
-				tRay.x += stepSize;
+				rayT.x += stepSize;
 				continue;
 			}
 
+			const float ambienScattFactor = 5.0f;
 			float occlustion = cloudDensity * (1.0f - lightAbsorption);
-			float attenuation = beerLambertCloud(cloudDensity * 10.0f, cosTheta);
+			float attenuation = beerLambertCloud(cloudDensity * ambienScattFactor, cosTheta);
 			float ambientScattering = pow(1.0f - dimProfile, 0.5f) * attenuation;
 			ambientIntensity += ambientScattering * occlustion;
-			lightAbsorption += occlustion; distanceSum += tRay.x * occlustion;
+			lightAbsorption += occlustion; distanceSum += rayT.x * occlustion;
 
-			if (sunIntens < FLOAT_EPS6)
+			if (starIntens < FLOAT_EPS6)
 			{
-				tRay.x += stepSize;
+				rayT.x += stepSize;
 				continue;
 			}
 
 			float lightDensity = 0.0f, lightStep = 0.006f;
 			for (uint32 step = 0; step < 10; step++) // 256 meters with 10 samples
 			{
-				samplePos = fma(sunDir, float3(lightStep), samplePos);
-				float3 data = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir);
-				float height = calcRelativeHeight(pc.bottomRadius, pc.coverage, samplePos, invThickness);
+				samplePos = fma(starDir, float3(lightStep), samplePos);
+				float3 data = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.02f);
+				float height = calcRelativeHeight(pc.bottomRadius, pc.cumulusCoverage, samplePos, invThickness);
 				float profile = calcVerticalProfile(verticalProfile, pc.temperature, 
-					data, height) * calcCloudCovergage(pc.coverage, data);
+					data, height) * calcCloudCovergage(pc.cumulusCoverage, data);
 				lightDensity = fma(calcCloudDensity(noiseShape, pc.cameraPos, 
-					samplePos, data, profile, noiseWindDir), lightStep, lightDensity);
+					samplePos, data, profile, shapeWindDir), lightStep, lightDensity);
 				lightStep += lightStep * 1.3f;
 			}
 
-			float lightTransmittance = beerLambertCloud(lightDensity * 100.0f, cosTheta);
+			const float directScattFactor = 100.0f;
+			float lightTransmittance = beerLambertCloud(lightDensity * directScattFactor, cosTheta);
 			float multiscattering = calcMultiscattering(hgMultiScat, stepSize, cloudData, 
 				relativeHeight, cloudCoverage, dimProfile, lightTransmittance);
 			float directScattering = fma(lightTransmittance, hgScattering, multiscattering);
@@ -188,12 +197,45 @@ void main()
 			}
 		}
 
-		tRay.x += stepSize;
+		rayT.x += stepSize;
 	}
 
 	if (lightAbsorption < 1.0f)
 	{
-		// TODO: trace cirrus
+		fieldWindDir = fma(fieldWindDir, float3(0.3f), float3(16.0f)); shapeWindDir *= 2.0f;
+		float3 samplePos = fma(ray.direction, float3(cirrusT), pc.cameraPos);
+		float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.025f);
+		float3 cirrusShapeData = sampleCirrusShape(cirrusShape, pc.cameraPos, samplePos, shapeWindDir);
+		float cloudCoverage = calcCloudCovergage(pc.cirrusCoverage, cloudData);
+		float cirrusDensity = calcCirrusDensity(cloudData, cirrusShapeData, cloudCoverage);
+
+		if (cirrusDensity > FLOAT_EPS6)
+		{
+			const float ambientScattFactor = 4.0f;
+			float occlustion = cirrusDensity * (1.0f - lightAbsorption);
+			float attenuation = beerLambertCloud(cirrusDensity, cosTheta) * ambientScattFactor;
+			float ambientScattering = pow(1.0f - cloudCoverage, 0.5f) * attenuation;
+			ambientIntensity += ambientScattering * occlustion;
+			lightAbsorption += occlustion; distanceSum += cirrusT * occlustion;
+
+			if (starIntens > FLOAT_EPS6)
+			{
+				const float lightStep = 25.0f; // Based on the 0.006f
+				float lightDensity = 0.0f;
+				for (uint32 step = 0; step < 4; step++)
+				{
+					samplePos = fma(starDir, float3(lightStep), samplePos);
+					float3 data = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.025f);
+					float3 shapeData = sampleCirrusShape(cirrusShape, pc.cameraPos, samplePos, shapeWindDir);
+					float coverage = calcCloudCovergage(pc.cirrusCoverage, data);
+					lightDensity += calcCirrusDensity(data, shapeData, coverage);
+				}
+
+				const float directScattFactor = 0.25f;
+				float lightTransmittance = beerLambertCloud(lightDensity * directScattFactor, cosTheta);
+				directIntensity += lightTransmittance * hgScattering * occlustion;
+			}
+		}
 	}
 	lightAbsorption = min(lightAbsorption, 1.0f);
 	
@@ -209,7 +251,7 @@ void main()
 	depth = calcDepth(worldPos * 1000.0f, cc.viewProj);
 	float4 ap = getAerialPerspLuminance(cameraVolume, fs.texCoords, length(worldPos));
 
-	float3 directLight = cc.sunLight * directIntensity;
+	float3 directLight = cc.starLight * directIntensity;
 	float3 ambientLight = cc.ambientLight * ambientIntensity;
 	float3 lightEnergy = lerp(directLight + ambientLight, ap.rgb, ap.a);
 	fb.color = float4(lightEnergy, lightAbsorption);
