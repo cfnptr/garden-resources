@@ -123,7 +123,7 @@ void main()
 	float3 fieldWindDir = calcFieldWindDir(cc.windDir, pc.currentTime);
 	float3 shapeWindDir = calcShapeWindDir(cc.windDir, pc.currentTime);
 	float3 starDir = -cc.lightDir; float cosTheta = dot(ray.direction, starDir);
-	float hgScattering = hgPhaseCloud(cosTheta), hgMultiScat = hgPhase(cosTheta, 0.3f);
+	float hgScattering = hgPhaseCloud(cosTheta), hgMultiScatt = hgPhase(0.3f, cosTheta);
 	float lightAbsorption = 0.0f, directIntensity = 0.0f, ambientIntensity = 0.0f, distanceSum = 0.0f;
 	float stepMul = 3.0f; uint32 missCount = 0; bool fastMarching = true;
 
@@ -183,7 +183,7 @@ void main()
 
 			const float directScattFactor = 100.0f;
 			float lightTransmittance = beerLambertCloud(lightDensity * directScattFactor, cosTheta);
-			float multiscattering = calcMultiscattering(hgMultiScat, stepSize, cloudData, 
+			float multiscattering = calcMultiscattering(hgMultiScatt, stepSize, cloudData, 
 				relativeHeight, cloudCoverage, dimProfile, lightTransmittance);
 			float directScattering = fma(lightTransmittance, hgScattering, multiscattering);
 			directIntensity += directScattering * occlustion;

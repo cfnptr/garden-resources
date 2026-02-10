@@ -16,6 +16,7 @@
 // Based on this: https://bruop.github.io/exposure/
 
 #include "common/tone-mapping.gsl"
+#include "auto-exposure/constants.h"
 
 localSize = 16, 16, 1;
 
@@ -32,7 +33,7 @@ uniform pushConstants
 	float invLogLumRange;
 } pc;
 
-shared uint32 histogramShared[256];
+shared uint32 histogramShared[WG_LOCAL_SIZE];
 
 //**********************************************************************************************************************
 uint32 colorToBin(float3 hdrColor, float minLogLum, float invLogLumRange)
@@ -46,20 +47,20 @@ uint32 colorToBin(float3 hdrColor, float minLogLum, float invLogLumRange)
 
 void main()
 {
-	uint32 localIndex = gl.localInvocationIndex;
-	histogramShared[localIndex] = 0;
+	uint32 localThreadID = gl.localInvocationIndex;
+	histogramShared[localThreadID] = 0;
 	barrier();
 
-	int2 hdrSize = textureSize(hdrBuffer, 0);
-	int2 globalID = int2(gl.globalInvocationID.xy);
+	const int2 hdrTexSize = textureSize(hdrBuffer, 0);
+	int2 globalThreadID = int2(gl.globalInvocationID.xy);
 
-	if (all(lessThan(globalID, hdrSize)))
+	if (all(lessThan(globalThreadID, hdrTexSize)))
 	{
-		float3 hdrColor = texelFetch(hdrBuffer, globalID, 0).rgb;
+		float3 hdrColor = texelFetch(hdrBuffer, globalThreadID, 0).rgb;
 		uint32 binIndex = colorToBin(hdrColor, pc.minLogLum, pc.invLogLumRange);
-		atomicAdd(histogramShared[binIndex], 1);
+		atomicAdd(histogramShared[binIndex], 1u);
 	}
 
 	barrier();
-	atomicAdd(histogram.data[localIndex], histogramShared[localIndex]);
+	atomicAdd(histogram.data[localThreadID], histogramShared[localThreadID]);
 }

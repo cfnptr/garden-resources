@@ -61,7 +61,7 @@ void main()
 
 		for (uint32 i = 1; i < COEFF_COUNT; i++, offset += texelSize2)
 		{
-			float k = kernel.coeffs[i].x; float o = kernel.coeffs[i].y;
+			float k = kernel.coeffs[i].x, o = kernel.coeffs[i].y;
 			float2 texOffset = fma(pc.texelSize, float2(o), offset) * pc.intensity;
 			sampleReinhard(sum, weight, k, fs.texCoords + texOffset);
 			sampleReinhard(sum, weight, k, fs.texCoords - texOffset);
@@ -74,7 +74,7 @@ void main()
 
 		for (uint32 i = 1; i < COEFF_COUNT; i++, offset += texelSize2)
 		{
-			float k = kernel.coeffs[i].x; float o = kernel.coeffs[i].y;
+			float k = kernel.coeffs[i].x, o = kernel.coeffs[i].y;
 			float2 texOffset = fma(pc.texelSize, float2(o), offset) * pc.intensity;
 			sum += textureLod(srcBuffer, fs.texCoords + texOffset, 0.0f) * k;
 			sum += textureLod(srcBuffer, fs.texCoords - texOffset, 0.0f) * k;

@@ -17,9 +17,6 @@
 #ifndef IBL_GSL
 #define IBL_GSL
 
-#define SH_BAND_COUNT 3
-#define SH_COEFF_COUNT 9 // 3 * 3
-
 float2 coordsToST(uint2 coords, float invDim)
 {
 	return fma(1.0f - (coords + 0.5f) * invDim, float2(2.0f), float2(-1.0f));

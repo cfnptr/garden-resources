@@ -12,7 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: We can potentially increase localSize to 16x16 on hardware with subgroup support.
+
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+spec const uint32 SG_SHARED_SIZE = 16;
+
 #include "common/sh.gsl"
+#include "atmosphere/constants.h"
+
+#ifdef GL_KHR_shader_subgroup_arithmetic
+#define SH_SHARED_SIZE (SG_SHARED_SIZE * SH3_COUNT)
+#else
+#define SH_SHARED_SIZE (SH_WG_LOCAL_SIZE * SH3_COUNT)
+#endif
 
 localSize = 64, 1, 1;
 
@@ -27,42 +39,55 @@ uniform pushConstants
 	uint32 offset;
 } pc;
 
-shared float3 shShared[576]; // 64 * SH_COEFF_COUNT
+shared float3 shShared[SH_SHARED_SIZE];
 
 void main()
 {
-	uint32 localIndex = gl.localInvocationIndex;
-	uint32 dstIndex = localIndex * SH_COEFF_COUNT;
+	bool isThreadValid = gl.globalInvocationID.x + pc.offset < sh.counter;
+#ifdef GL_KHR_shader_subgroup_arithmetic
+	uint32 sharedIndex = gl.subgroupID * SH3_COUNT;
+#else
+	uint32 sharedIndex = gl.localInvocationIndex * SH3_COUNT;
+#endif
 
-	if (gl.globalInvocationID.x + pc.offset < sh.counter)
+	uint32 srcIndex = (gl.globalInvocationID.x + pc.offset) * SH3_COUNT;
+	for (uint32 i = 0; i < SH3_COUNT; i++)
 	{
-		uint32 srcIndex = (gl.globalInvocationID.x + pc.offset) * SH_COEFF_COUNT;
-		for (uint32 i = 0; i < SH_COEFF_COUNT; i++)
-			shShared[dstIndex + i] = sh.cache[srcIndex + i].rgb;
-	}
-	else
-	{
-		for (uint32 i = 0; i < SH_COEFF_COUNT; i++)
-			shShared[dstIndex + i] = float3(0.0f);
+		float3 shColor = isThreadValid ? sh.cache[srcIndex + i].rgb : float3(0.0f);
+#ifdef GL_KHR_shader_subgroup_arithmetic
+		float3 subgroupSum = subgroupAdd(shColor);
+		if (subgroupElect())
+			shShared[sharedIndex + i] = subgroupSum;
+#else
+		shShared[sharedIndex + i] = shColor;
+#endif
 	}
 	barrier();
 
-	// TODO: add subgroupVote implementation enabled by spec const.
-	for (uint32 stride = (64 >> 1); stride > 0; stride >>= 1)
+#ifndef GL_KHR_shader_subgroup_arithmetic
+	for (uint32 stride = (SH_WG_LOCAL_SIZE >> 1); stride > 0; stride >>= 1)
 	{
-		if (localIndex < stride)
+		if (gl.localInvocationIndex < stride)
 		{
-			uint32 srcIndex = (localIndex + stride) * SH_COEFF_COUNT;
-			for (uint32 i = 0; i < SH_COEFF_COUNT; i++)
-				shShared[dstIndex + i] += shShared[srcIndex + i];
+			srcIndex = (gl.localInvocationIndex + stride) * SH3_COUNT;
+			for (uint32 i = 0; i < SH3_COUNT; i++)
+				shShared[sharedIndex + i] += shShared[srcIndex + i];
 		}
 		barrier();
 	}
+#endif
 
-	if (localIndex == 0)
+	if (gl.localInvocationIndex == 0)
 	{
-		uint32 index = atomicAdd(sh.counter, 1) * SH_COEFF_COUNT;
-		for (uint32 i = 0; i < SH_COEFF_COUNT; i++)
-			sh.cache[index + i] = float4(shShared[i], 0.0f);
+		uint32 index = atomicAdd(sh.counter, 1u) * SH3_COUNT;
+		for (uint32 i = 0; i < SH3_COUNT; i++)
+		{
+			float3 shSum = shShared[i];
+#ifdef GL_KHR_shader_subgroup_arithmetic
+			for (uint32 j = 1; j < SG_SHARED_SIZE; j++)
+				shSum += float(shShared[j * SG_SHARED_SIZE + i]);
+#endif
+			sh.cache[index + i] = float4(shSum, 0.0f);
+		}
 	}
 }

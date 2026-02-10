@@ -15,7 +15,17 @@
 // Automatic exposure average.
 // Based on this: https://bruop.github.io/exposure/
 
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+spec const uint32 SG_SHARED_SIZE = 64;
+
 #include "common/tone-mapping.gsl"
+#include "auto-exposure/constants.h"
+
+#ifdef GL_KHR_shader_subgroup_arithmetic
+#define HG_SHARED_SIZE SG_SHARED_SIZE
+#else
+#define HG_SHARED_SIZE WG_LOCAL_SIZE
+#endif
 
 localSize = 256, 1, 1;
 
@@ -39,32 +49,46 @@ uniform pushConstants
 	float brightAdaptRate;
 } pc;
 
-shared uint32 histogramShared[256];
+shared uint32 histogramShared[HG_SHARED_SIZE];
 
 //**********************************************************************************************************************
 void main()
 {
-	uint32 localIndex = gl.localInvocationIndex;
-	uint32 binCount = histogram.data[localIndex];
-	histogramShared[localIndex] = binCount * localIndex;
+	uint32 localThreadID = gl.localInvocationIndex;
+	uint32 weightedBinCount = histogram.data[localThreadID] * localThreadID;
+
+#ifdef GL_KHR_shader_subgroup_arithmetic
+	uint32 subgroupSum = subgroupAdd(weightedBinCount);
+	if (subgroupElect())
+		histogramShared[gl.subgroupID] = subgroupSum;
+	barrier();
+#else
+	histogramShared[localThreadID] = weightedBinCount;
 	barrier();
 
-	// TODO: add subgroupVote implementation enabled by spec const.
-	for (uint32 stride = (256 >> 1); stride > 0; stride >>= 1)
+	for (uint32 stride = (WG_LOCAL_SIZE >> 1); stride > 0; stride >>= 1)
 	{
-		histogramShared[localIndex] += localIndex < stride ? 
-			histogramShared[localIndex + stride] : 0;
+		histogramShared[localThreadID] += localThreadID < stride ? 
+			histogramShared[localThreadID + stride] : 0;
 		barrier();
 	}
+#endif
 
-	if (localIndex == 0)
+	if (localThreadID == 0)
 	{
-		float weightedLogAvg = (histogramShared[0] / max(pc.pixelCount - float(binCount), 1.0f)) - 1.0f;
-		float weightedAvgLum = exp2(((weightedLogAvg * (1.0f / 254.0f)) * pc.logLumRange) + pc.minLogLum);
-		float lastLuminance = luminance.avgLuminance;
+		float weightedSum = float(histogramShared[0]);
+#ifdef GL_KHR_shader_subgroup_arithmetic
+		for (uint32 i = 1; i < SG_SHARED_SIZE; i++)
+			weightedSum += float(histogramShared[i]);
+#endif
+		float validPixelCount = max(pc.pixelCount - float(histogram.data[0]), 1.0f);
+		float weightedLogAvg = (weightedSum / validPixelCount) - 1.0f;
+		float weightedAvgLum = exp2(fma(weightedLogAvg * (1.0f / 254.0f), pc.logLumRange, pc.minLogLum));
 
-		luminance.avgLuminance = lastLuminance + (weightedAvgLum - lastLuminance) *
-			(weightedAvgLum > lastLuminance ? pc.brightAdaptRate : pc.darkAdaptRate);
-		luminance.exposure = 1.0f / (luminance.avgLuminance * LUM_TO_EXP + 0.0001f);
+		float lastLuminance = luminance.avgLuminance;
+		float avgLuminance = fma(weightedAvgLum - lastLuminance, weightedAvgLum > 
+			lastLuminance ? pc.brightAdaptRate : pc.darkAdaptRate, lastLuminance);
+		luminance.avgLuminance = avgLuminance;
+		luminance.exposure = 1.0f / (avgLuminance * (LUM_TO_EXP + 0.0001f));
 	}
 }

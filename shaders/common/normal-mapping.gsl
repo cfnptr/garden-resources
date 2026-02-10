@@ -27,12 +27,19 @@ float3x3 computeTBN(float4x3 model, float3 normal, float3 tangent)
 	return float3x3(t, b, n);
 }
 
-float3x3 approximateTBN(float3 normal) // Branchless ONB (Duff et al. Orthonormal Basis)
+float3x3 approximateTBN(float3 normal)
+{
+	float3 up = abs(normal.z) < 0.999f ? 
+		float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+	float3 tangent = normalize(cross(up, normal));
+	float3 bitangent = cross(normal, tangent);
+	return float3x3(tangent, bitangent, normal);
+}
+float3x3 fastApproximateTBN(float3 normal) // Branchless ONB (Duff et al. Orthonormal Basis)
 {
 	float signZ = normal.z >= 0.0f ? 1.0f : -1.0f;
-	float a = -1.0f / (signZ + normal.z), b = normal.x * normal.y * a;
-	float3 tangent = float3(fma(signZ * normal.x * normal.x, 
-		a, 1.0f), signZ * b, -signZ * normal.x);
+	float a = -1.0f / (signZ + normal.z); float b = normal.x * normal.y * a;
+	float3 tangent = float3(fma(signZ * normal.x * normal.x, a, 1.0f), signZ * b, -signZ * normal.x);
 	float3 bitangent = float3(b, fma(normal.y * normal.y, a, signZ), -normal.y);
 	return float3x3(tangent, bitangent, normal);
 }

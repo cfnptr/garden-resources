@@ -43,7 +43,7 @@ uniform sampler2D
 uniform sampler2D
 {
 	filter = linear;
-} multiScatLUT;
+} multiScattLUT;
 
 uniform pushConstants
 {
@@ -91,13 +91,13 @@ void uvToSkyView(float bottomRadius, float viewHeight,
 	float2 uv, out float viewZenithCosAngle, out float lightViewCosAngle)
 {
 	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible).
-	uv = (uv - 0.5f / pc.skyViewLutSize) * (pc.skyViewLutSize / (pc.skyViewLutSize - 1.0f));
-	float vHorizon = sqrt(viewHeight * viewHeight - bottomRadius * bottomRadius);
+	uv = (uv - (0.5f / pc.skyViewLutSize)) * (pc.skyViewLutSize / (pc.skyViewLutSize - 1.0f));
+	float vHorizon = sqrt((viewHeight * viewHeight) - (bottomRadius * bottomRadius));
 	float beta = acosFast4(vHorizon / viewHeight); float zenithHorizonAngle = float(M_PI) - beta;
 
 	if (uv.y < 0.5f)
 	{
-		float coord = 1.0f - 2.0f * uv.y;
+		float coord = 1.0f - (2.0f * uv.y);
 		viewZenithCosAngle = cos(zenithHorizonAngle * (1.0f - (coord * coord)));
 	}
 	else
@@ -116,11 +116,13 @@ void main()
 	uvToSkyView(atmosphere.bottomRadius, viewHeight, fs.texCoords, viewZenithCosAngle, lightViewCosAngle);
 
 	float3 upVector = pc.cameraPos / viewHeight; float starZenithCosAngle = dot(upVector, pc.starDir);
-	float3 starDir = normalize(float3(sqrt(1.0f - starZenithCosAngle * starZenithCosAngle), starZenithCosAngle, 0.0f));
+	float3 starDir = normalize(float3(sqrt(1.0f - 
+		(starZenithCosAngle * starZenithCosAngle)), starZenithCosAngle, 0.0f));
 	float3 worldPos = float3(0.0f, viewHeight, 0.0f);
-	float viewZenithSinAngle = sqrt(1.0f - viewZenithCosAngle * viewZenithCosAngle);
+	float viewZenithSinAngle = sqrt(1.0f - (viewZenithCosAngle * viewZenithCosAngle));
 	float3 worldDir = normalize(float3(viewZenithSinAngle * lightViewCosAngle, viewZenithCosAngle,
-		viewZenithSinAngle * sqrt(1.0f - lightViewCosAngle * lightViewCosAngle)));
+		viewZenithSinAngle * sqrt(1.0f - (lightViewCosAngle * lightViewCosAngle))));
+
 	if (!moveToTopAtmosphere(worldPos, worldDir, atmosphere.topRadius))
 	{
 		fb.color = float4(float3(0.0f), 1.0f); 
@@ -128,6 +130,6 @@ void main()
 	}
 
 	ScatteringResult result = integrateScatteredLuminance(fs.texCoords, Ray(worldPos, 
-		worldDir), starDir, atmosphere, 0.0f, DEFAULT_T_MAX_MAX, transLUT, multiScatLUT);
+		worldDir), starDir, atmosphere, 0.0f, DEFAULT_T_MAX_MAX, transLUT, multiScattLUT);
 	fb.color = float4(result.l, 1.0f);
 }

@@ -67,7 +67,7 @@ uniform set1 samplerCube
 } specular;
 uniform set1 ShData
 {
-	half4 data[SH_COEFF_COUNT];
+	half4x4 diffuse[3];
 } sh;
 
 uniform pushConstants
@@ -118,6 +118,6 @@ void main()
 		gBuffer.giColor = textureLod(giBuffer, fs.texCoords, 0.0f).rgb;
 
 	gBuffer.viewDirection = calcViewDirection(worldPosition.xyz);
-	IblTerms terms = evaluateIBL(gBuffer, dfgLUT, sh.data, specular);
+	IblTerms terms = evaluateIBL(gBuffer, dfgLUT, sh.diffuse, specular);
 	fb.hdr = float4(terms.fd + terms.fr + terms.fe, 1.0f);
 }

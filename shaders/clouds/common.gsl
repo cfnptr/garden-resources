@@ -38,8 +38,8 @@ float calcCloudCovergage(float coverage, float3 cloudData)
 	return saturate(remap(cloudData.y, coverage, 1.0f, 0.0f, 1.0f));
 }
 
-float3 calcFieldWindDir(float3 windDir, float currentTime) { return windDir * (currentTime * 0.01f); }
-float3 calcShapeWindDir(float3 windDir, float currentTime) { return windDir.yzx * (currentTime * -0.001f); }
+float3 calcFieldWindDir(float3 windDir, float currentTime) { return windDir * (currentTime * 0.02f); }
+float3 calcShapeWindDir(float3 windDir, float currentTime) { return windDir.yzx * (currentTime * -0.002f); }
 
 float calcCloudMipLevel(float3 cameraPos, float3 samplePos, float scale, float offset)
 {
@@ -111,16 +111,16 @@ float calcCirrusDensity(float3 cloudData, float3 cirrusShape, float cloudCoverag
 	return saturate(density * valueRemapConst(pow(cloudCoverage, 3.0f), 0.0f, 0.5f, 0.0f, 1.0f));
 }
 
-float hgPhase(float cosTheta, float eccentricity) // Henyey Greenstein
+float hgPhase(float anisotropy, float cosTheta) // Henyey Greenstein
 {
-	const float g2 = eccentricity * eccentricity;
-	float i = inversesqrt((1.0f + g2) - cosTheta * (eccentricity * 2.0f));
-	return (i * i * i) * ((1.0f - g2) * M_1_PI4);
+	const float g2 = anisotropy * anisotropy;
+	float i = rsqrt(saturate((g2 + 1.0f) - cosTheta * (anisotropy * 2.0f)));
+	return (i * i * i) * ((1.0f - g2) * float(M_1_PI4));
 }
 float hgPhaseCloud(float cosTheta) // Emulates the sun silver lining highlights.
 {
-	const float eccentricity = 0.6f, silverIntens = 0.6f, silverSpread = 0.2f;
-	return max(hgPhase(cosTheta, eccentricity), hgPhase(cosTheta, 0.99f - silverSpread) * silverIntens);
+	const float anisotropy = 0.6f, silverIntens = 0.6f, silverSpread = 0.2f;
+	return max(hgPhase(anisotropy, cosTheta), hgPhase(0.99f - silverSpread, cosTheta) * silverIntens);
 }
 
 // HG makes far clouds too dark, clouds away from star direction need extra scattering.
@@ -130,11 +130,11 @@ float beerLambertCloud(float accumDensity, float cosTheta)
 	float modulated = max(transmission, exp(accumDensity * -0.25f) * 0.7f);
 	return mix(transmission, modulated, fma(cosTheta, -0.5f, 0.5f));
 }
-float calcMultiscattering(float hgMultiScat, float stepSize, float3 cloudData, 
+float calcMultiscattering(float hgMultiScatt, float stepSize, float3 cloudData, 
 	float relativeHeight, float cloudCoverage, float dimProfile, float transmittacne)
 {
 	const float depthPower = 0.01f, heightPower = 1.2f;
-	return hgMultiScat * remapConstClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
+	return hgMultiScatt * remapConstClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
 		pow(cloudCoverage * cloudData.z, 0.25f) * pow(transmittacne, depthPower) * pow(relativeHeight, heightPower);
 }
 

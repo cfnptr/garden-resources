@@ -61,8 +61,8 @@ uniform pushConstants
 //**********************************************************************************************************************
 float2 skyViewToUv(bool intersectGround, float viewZenithCosAngle, float lightViewCosAngle, float viewHeight)
 {
-	float vHorizon = sqrt(viewHeight * viewHeight - pc.bottomRadius * pc.bottomRadius);
-	float beta = acosFast4(vHorizon / viewHeight); float zenithHorizonAngle = M_PI - beta;
+	float vHorizon = sqrt((viewHeight * viewHeight) - (pc.bottomRadius * pc.bottomRadius));
+	float beta = acosFast4(vHorizon / viewHeight); float zenithHorizonAngle = float(M_PI) - beta;
 	float2 uv; uv.x = sqrt(fma(-lightViewCosAngle, 0.5f, 0.5f));
 
 	if (!intersectGround)
@@ -78,7 +78,7 @@ float2 skyViewToUv(bool intersectGround, float viewZenithCosAngle, float lightVi
 
 	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible).
 	const float2 skyViewSize = float2(textureSize(skyViewLUT, 0));
-	return (uv + 0.5f / skyViewSize) * (skyViewSize / (skyViewSize + 1.0f));
+	return ((0.5f / skyViewSize) + uv) * (skyViewSize / (skyViewSize + 1.0f));
 }
 
 float3 getStarLuminance(float3 worldDir, bool intersectGround)

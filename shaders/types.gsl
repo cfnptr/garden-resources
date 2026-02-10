@@ -88,6 +88,7 @@
 #define saturate(x) clamp(x, 0.0, 1.0)
 #define lerp(x, y, a) mix(x, y, a)
 #define mad(a, b, c) fma(a, b, c)
+#define rsqrt(x) inversesqrt(x)
 #define frac(x) fract(x)
 
 #define ddx(p) dFdx(p)

@@ -45,7 +45,7 @@ struct IblTerms
 };
 
 //**********************************************************************************************************************
-IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 shBuffer[SH_COEFF_COUNT]
+IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, half4x4 shDiffuse[3]
 	#ifndef USE_DIFFUSE_ONLY
 	, samplerCube iblSpecular
 	#endif
@@ -85,7 +85,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, const half4 
 	#endif
 
 	#ifndef USE_SPECULAR_ONLY
-	float3 irradiance = diffuseIrradiance(gBuffer.normal, shBuffer);
+	float3 irradiance = diffuseIrradiance(gBuffer.normal, shDiffuse);
 	#ifdef USE_GLOBAL_ILLUMINATION
 	irradiance = lerp(gBuffer.giColor, irradiance, shadow.a);
 	#endif

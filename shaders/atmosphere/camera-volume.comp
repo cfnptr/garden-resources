@@ -36,7 +36,7 @@ uniform sampler2D
 uniform sampler2D
 {
 	filter = linear;
-} multiScatLUT;
+} multiScattLUT;
 
 uniform CommonConstants
 {
@@ -92,7 +92,7 @@ void main()
 	float2 texCoords = (float2(gl.globalInvocationID.xy) + 0.5f) * (1.0f / CAMERA_VOLUME_LENGTH);
 	float3 worldDir = calcViewDirection(texCoords, cc.invViewProj);
 	float slice = (float(gl.globalInvocationID.z) + 0.5f) * (1.0f / SLICE_COUNT);
-	slice = slice * slice * SLICE_COUNT; // Squared slice distribution.
+	slice = (slice * slice) * SLICE_COUNT; // Squared slice distribution.
 
 	// Compute position from froxel information.
 	float tMaxMax = slice * KM_PER_SLICE;
@@ -103,7 +103,7 @@ void main()
 	if (viewHeight <= atmosphere.bottomRadius + PLANET_RADIUS_OFFSET)
 	{
 		// Apply a position offset to make sure no artefact are visible close to the earth boundaries for large voxel.
-		newWorldPos = normalize(newWorldPos) * (atmosphere.bottomRadius + PLANET_RADIUS_OFFSET + 0.001f);
+		newWorldPos = normalize(newWorldPos) * (atmosphere.bottomRadius + (PLANET_RADIUS_OFFSET + 0.001f));
 		worldDir = normalize(newWorldPos - pc.cameraPos); tMaxMax = length(newWorldPos - pc.cameraPos);
 	}
 
@@ -130,7 +130,7 @@ void main()
 
 	float sampleCount = max(1.0f, float(gl.globalInvocationID.z + 1) * SAMPLES_PER_SLICE);
 	ScatteringResult result = integrateScatteredLuminance(texCoords, Ray(worldPos, 
-		worldDir), pc.starDir, atmosphere, sampleCount, tMaxMax, transLUT, multiScatLUT);
-	float4 color = float4(result.l, 1.0f - dot(result.transmittance, float3(1.0f / 3.0f)));
+		worldDir), pc.starDir, atmosphere, sampleCount, tMaxMax, transLUT, multiScattLUT);
+	float4 color = float4(result.l, 1.0f - dot(result.transmittance, float3(1.0 / 3.0)));
 	imageStore(cameraVolume, int3(gl.globalInvocationID), color);
 }

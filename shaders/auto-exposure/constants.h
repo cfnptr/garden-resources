@@ -12,21 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Based on this: https://github.com/iryoku/smaa/blob/master/SMAA.hlsl
+#ifndef AUTO_EXPOSURE_CONSTANTS_H
+#define AUTO_EXPOSURE_CONSTANTS_H
 
-#include "common/fullscreen.gsl"
+#define WG_LOCAL_SIZE 256
 
-out noperspective float2 fs.texCoords;
-out noperspective float4 fs.offset;
-
-uniform pushConstants
-{
-	float2 invFrameSize;
-} pc;
-
-void main()
-{
-	fs.texCoords = toFullscreenTexCoords(gl.vertexIndex);
-	gl.position = float4(toFullscreenPosition(fs.texCoords), 1.0f);
-	fs.offset = fma(pc.invFrameSize.xyxy, float4(1.0f, 0.0f, 0.0, 1.0f), fs.texCoords.xyxy);
-}
+#endif // AUTO_EXPOSURE_CONSTANTS_H

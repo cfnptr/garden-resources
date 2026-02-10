@@ -51,8 +51,7 @@ void raycast(Aabb aabb, Ray ray, out float3 tMin, out float3 tMax)
 float2 raycast2I(Aabb aabb, Ray ray)
 {
 	float3 tMin; float3 tMax; raycast(aabb, ray, tMin, tMax);
-	float t0 = max(tMin); float t1 = min(tMax);
-	return float2(t0, t1);
+	return float2(max(tMin), min(tMax));
 }
 float2 raycast2(Aabb aabb, Ray ray)
 {
@@ -75,10 +74,10 @@ float raycast1(Aabb aabb, Ray ray)
 float2 raycast2I(Aabb aabb, Ray ray, out float3 normal)
 {
 	float3 tMin; float3 tMax; raycast(aabb, ray, tMin, tMax);
-	float t0 = max(tMin); float t1 = min(tMax);
-	float3 axisMask = step(abs(t0 - tMin), float3(FLOAT_EPS6));
+	float2 t = float2(max(tMin), min(tMax));
+	float3 axisMask = step(abs(t.x - tMin), float3(FLOAT_EPS6));
 	normal = axisMask * -sign(ray.direction);
-	return float2(t0, t1);
+	return t;
 }
 float2 raycast2(Aabb aabb, Ray ray, out float3 normal)
 {
@@ -101,12 +100,12 @@ float raycast1(Aabb aabb, Ray ray, out float3 normal)
 float2 raycast2I(Aabb aabb, Ray ray, out uint32 sideIndex)
 {
 	float3 tMin; float3 tMax; raycast(aabb, ray, tMin, tMax);
-	float t0 = max(tMin); float t1 = min(tMax);
-	float3 axisMask = step(abs(t0 - tMin), float3(FLOAT_EPS6));
+	float2 t = float2(max(tMin), min(tMax));
+	float3 axisMask = step(abs(t.x - tMin), float3(FLOAT_EPS6));
 	float3 axisIndex = float3(0.0f, 2.0f, 4.0f);
 	float3 directionOffset = step(float3(0.0f), -ray.direction);
 	sideIndex = min(uint32(dot(axisMask, axisIndex + directionOffset)), 5u);
-	return float2(t0, t1);
+	return t;
 }
 float2 raycast2(Aabb aabb, Ray ray, out uint32 sideIndex)
 {

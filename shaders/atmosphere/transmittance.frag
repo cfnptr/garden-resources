@@ -67,14 +67,14 @@ AtmosphereParams getAtmosphereParams()
 void uvToTransmittanceRMU(float2 uv, out float r, out float mu)
 {
 	// Distance to the top atmosphere boundary for a horizontal ray at ground level.
-	float h = sqrt(pc.topRadius * pc.topRadius - pc.bottomRadius * pc.bottomRadius);
+	float h = sqrt((pc.topRadius * pc.topRadius) - (pc.bottomRadius * pc.bottomRadius));
 	float rHor = h * uv.y; // Distance to the horizon, from which we can compute r.
-	r = sqrt(rHor * rHor + pc.bottomRadius * pc.bottomRadius);
+	r = sqrt(fma(rHor, rHor, pc.bottomRadius * pc.bottomRadius));
 
 	// Distance to the top atmosphere boundary for the ray (r, mu), and its minimum and maximum values 
 	// over all mu - obtained for (r, 1) and (r, muHorizon) - from which we can recover mu:
-	float dMin = pc.topRadius - r; float dMax = rHor + h; float d = fma(uv.x, dMax - dMin, dMin);
-	mu = clamp(d == 0.0f ? 1.0f : (h * h - rHor * rHor - d * d) / (2.0f * r * d), -1.0f, 1.0f);
+	float dMin = pc.topRadius - r, dMax = rHor + h; float d = fma(uv.x, dMax - dMin, dMin);
+	mu = clamp(d == 0.0f ? 1.0f : ((h * h) - (rHor * rHor) - (d * d)) / (r * d * 2.0f), -1.0f, 1.0f);
 }
 
 void main()
@@ -82,7 +82,7 @@ void main()
 	float viewHeight; float viewZenithCosAngle; // Compute camera position from the LUT coords.
 	uvToTransmittanceRMU(fs.texCoords, viewHeight, viewZenithCosAngle);
 	float3 worldDir = normalize(float3(0.0f, viewZenithCosAngle, 
-		sqrt(1.0f - viewZenithCosAngle * viewZenithCosAngle)));
+		sqrt(1.0f - (viewZenithCosAngle * viewZenithCosAngle))));
 
 	AtmosphereParams atmosphere = getAtmosphereParams();
 	float3 transmittance = exp(-integrateScatteredLuminance(fs.texCoords, Ray(float3(0.0f, viewHeight, 

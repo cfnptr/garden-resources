@@ -18,7 +18,6 @@
 #ifndef BRDF_GSL
 #define BRDF_GSL
 
-#include "common/ibl.gsl"
 #include "common/math.gsl"
 
 #define MIN_ROUGHNESS 0.045f
@@ -160,23 +159,16 @@ float3 prefilteredRadiance(samplerCube iblSpecular, float3 r, float linearRoughn
 	return textureLod(iblSpecular, r, lod + offset).rgb;
 }
 
-float3 diffuseIrradiance(float3 normal, const half4 shBuffer[SH_COEFF_COUNT])
+half3 diffuseIrradiance(float3 normal, half4x4 shDiffuse[3])
 {
-	half3 n = half3(normal);
-	half4 qb = n.yyzz * n.xzzx;
-	qb.z = fma(qb.z, 3.0hf, -1.0hf);
-	half ft = n.x * n.x - n.y * n.y;
-
-	half3 irradiance = shBuffer[0].xyz;
-	irradiance = fma(shBuffer[1].xyz, n.yyy, irradiance);
-	irradiance = fma(shBuffer[2].xyz, n.zzz, irradiance);
-	irradiance = fma(shBuffer[3].xyz, n.xxx, irradiance);
-	irradiance = fma(shBuffer[4].xyz, qb.xxx, irradiance);
-	irradiance = fma(shBuffer[5].xyz, qb.yyy, irradiance);
-	irradiance = fma(shBuffer[6].xyz, qb.zzz, irradiance);
-	irradiance = fma(shBuffer[7].xyz, qb.www, irradiance);
-	irradiance = fma(shBuffer[8].xyz, half3(ft), irradiance);
-	return float3(max(irradiance, half3(0.0hf)));
+	float4 qb = normal.yyzz * normal.xzzx;
+	half3 b1 = half3(1.0f, normal.y, normal.z);
+	half3 b2 = half3(normal.x, qb.x, qb.y);
+	half3 b3 = half3(fma(qb.z, 3.0f, -1.0f), qb.w, 
+		normal.x * normal.x - normal.y * normal.y);
+	half3 irradiance = half3x3(shDiffuse[0]) * b1 + 
+		half3x3(shDiffuse[1]) * b2 + half3x3(shDiffuse[2]) * b3;
+	return max(irradiance, half3(0.0hf));
 }
 
 float packRoughness(float linearRoughness) { return sqrt(max(linearRoughness, 0.0f)); }

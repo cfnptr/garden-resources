@@ -61,7 +61,7 @@ struct ScatteringResult
 	#ifdef USE_TRANSMITTANCE_LUT
 	float3 l;
 	float3 transmittance;
-	float3 multiScatAs1;
+	float3 multiScattAs1;
 	#endif
 };
 
@@ -73,7 +73,7 @@ ScatteringResult initScatteringResult()
 	#ifdef USE_TRANSMITTANCE_LUT
 	result.l = float3(0.0f);
 	result.transmittance = float3(0.0f);
-	result.multiScatAs1 = float3(0.0f);
+	result.multiScattAs1 = float3(0.0f);
 	#endif
 	return result;
 }
@@ -81,9 +81,9 @@ ScatteringResult initScatteringResult()
 float raycastAtmosphere(Sphere sphere, Ray ray)
 {
 	float2 t = raycast2(sphere, ray);
-	if (t.x < 0.0f && t.y < 0.0f) return -FLOAT32_MAX;
-	if (t.x < 0.0f) return max(0.0f, t.y);
-	return max(0.0f, min(t.x, t.y));
+	if (all(lessThan(t, float2(0.0f)))) return -FLOAT32_MAX;
+	if (t.x < 0.0f) return max(t.y, 0.0f);
+	return max(min(t.x, t.y), 0.0f);
 }
 bool moveToTopAtmosphere(inout float3 worldPos, float3 worldDir, float atmosphereTopRadius)
 {
@@ -101,15 +101,17 @@ bool moveToTopAtmosphere(inout float3 worldPos, float3 worldDir, float atmospher
 	return true; // OK, start tracing.
 }
 
-float miePhase(float g, float cosTheta) // Cornette-Shanks
+float miePhase(float anisotropy, float cosTheta) // Cornette-Shanks
 {
-	float k = (3.0f / float(8.0 * M_PI)) * (1.0f - g * g) / fma(g, g, 2.0f);
-	return k * fma(cosTheta, cosTheta, 1.0f) / pow(fma(g, g, 1.0f) - 2.0f * g * -cosTheta, 1.5f);
+	const float g2 = anisotropy * anisotropy;
+	const float k = ((1.0f - g2) * float(M_1_PI4 * 1.5)) / (g2 + 2.0f);
+	float i = 1.0f / sqrt(saturate(fma(cosTheta * anisotropy, -2.0f, g2 + 1.0f)));
+	return k * fma(cosTheta, cosTheta, 1.0f) * (i * i * i);
 }
 float rayleighPhase(float cosTheta)
 {
-	const float factor = 3.0f / float(16.0 * M_PI);
-	return factor * fma(cosTheta, cosTheta, 1.0f);
+	const float factor = float(3.0 / (16.0 * M_PI));
+	return fma(cosTheta, cosTheta, 1.0f) * factor;
 }
 
 //**********************************************************************************************************************
@@ -134,27 +136,27 @@ MediumSampleRGB sampleMediumRGB(AtmosphereParams atmosphere, float pHeight)
 	return s;
 }
 
-float3 getMultipleScattering(sampler2D multiScatLUT, float bottomRadius, 
+float3 getMultipleScattering(sampler2D multiScattLUT, float bottomRadius, 
 	float topRadius, float pHeight, float viewZenithCosAngle)
 {
 	float2 texCoords = saturate(float2(fma(viewZenithCosAngle, 0.5f, 0.5f), 
 		(pHeight - bottomRadius) / (topRadius - bottomRadius)));
-	texCoords = (texCoords + 0.5f / MULTI_SCAT_LUT_LENGTH) * 
-		(MULTI_SCAT_LUT_LENGTH / (MULTI_SCAT_LUT_LENGTH + 1.0f));
-	return textureLod(multiScatLUT, texCoords, 0.0f).rgb;
+	texCoords = (texCoords + (0.5f / MULTI_SCATT_LUT_LENGTH)) * 
+		(MULTI_SCATT_LUT_LENGTH / (MULTI_SCATT_LUT_LENGTH + 1.0f));
+	return textureLod(multiScattLUT, texCoords, 0.0f).rgb;
 }
 
 float2 transmittanceRmuToUV(float bottomRadius, float topRadius, float r, float mu)
 {
 	// Distance to top atmosphere boundary for a horizontal ray at ground level.
-	float h = sqrt(max(0.0f, topRadius * topRadius - bottomRadius * bottomRadius));
-	float rHor = sqrt(max(0.0f, r * r - bottomRadius * bottomRadius)); // Distance to the horizon.
+	float h = sqrt(max((topRadius * topRadius) - (bottomRadius * bottomRadius), 0.0f));
+	float rHor = sqrt(max((r * r) - (bottomRadius * bottomRadius), 0.0f)); // Distance to the horizon.
 
 	// Distance to the top atmosphere boundary for the ray (r, mu), and its minimum
 	// and maximum values over all mu - obtained for (r, 1) and (r, muHorizon).
 	float discriminant = fma(topRadius, topRadius, r * r * fma(mu, mu, -1.0f));
-	float d = max(0.0f, fma(-r, mu, sqrt(discriminant)));
-	float dMin = topRadius - r; float dMax = rHor + h;
+	float d = max(fma(-r, mu, sqrt(discriminant)), 0.0f);
+	float dMin = topRadius - r, dMax = rHor + h;
 	return float2((d - dMin) / (dMax - dMin), rHor / h);
 }
 float3 getTransmittance(sampler2D transLUT, Ray ray, float bottomRadius, float topRadius)
@@ -187,7 +189,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 	, sampler2D transLUT
 	#endif
 	#ifdef USE_MULTI_SCATTERING_LUT
-	, sampler2D multiScatLUT
+	, sampler2D multiScattLUT
 	#endif
 	)
 {
@@ -226,10 +228,9 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 	float3 opticalDepth = float3(0.0f); float t = 0.0f; 
 
 	#ifdef USE_TRANSMITTANCE_LUT
-	const float uniformPhase = 1.0f / float(4.0 * M_PI);
+	const float uniformPhase = float(1.0 / (4.0 * M_PI));
 	float cosTheta = dot(starDir, ray.direction);
-	// Negate cosTheta because due to ray.direction being a "in" direction.
-	float miePhaseValue = miePhase(atmosphere.miePhaseG, -cosTheta);	
+	float miePhaseValue = miePhase(atmosphere.miePhaseG, cosTheta);	
 	float rayleighPhaseValue = rayleighPhase(cosTheta);
 	const float3 globalL = float3(1.0f); // Light illuminance.
 	float3 l = float3(0.0f); float3 throughput = float3(1.0f);
@@ -239,7 +240,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 	{
 		#ifdef USE_SCAT_VAR_SAMPLE_COUNT
 			// More expensive but artefact free.
-			float t0 = i * sampleCountFloor; float t1 = (i + 1.0f) * sampleCountFloor;
+			float t0 = i * sampleCountFloor, t1 = (i + 1.0f) * sampleCountFloor;
 			t0 *= t0; t1 *= t1; // Non linear distribution of sample within the range.
 			t0 *= tMaxFloor; // Make t0 and t1 world space distances.
 
@@ -262,7 +263,7 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		opticalDepth += sampleOpticalDepth;
 
 		#ifdef USE_MULTI_SCATTERING_LUT
-		float3 multiScatLuminance = getMultipleScattering(multiScatLUT, 
+		float3 multiScatLuminance = getMultipleScattering(multiScattLUT, 
 			atmosphere.bottomRadius, atmosphere.topRadius, pHeight, starZenithCosAngle);
 		#else
 		const float3 multiScatLuminance = float3(0.0f);
@@ -274,8 +275,8 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		float3 transmittanceToStar = textureLod(transLUT, uv, 0.0f).rgb;
 
 		#ifdef USE_SCAT_MIE_RAY_PHASE
-		float3 phaseTimesScattering = medium.scatteringMie * 
-			miePhaseValue + medium.scatteringRay * rayleighPhaseValue;
+		float3 phaseTimesScattering = fma(medium.scatteringMie, 
+			float3(miePhaseValue), medium.scatteringRay * rayleighPhaseValue);
 		#else
 		float3 phaseTimesScattering = medium.scattering * uniformPhase;
 		#endif
@@ -289,14 +290,14 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		const float shadow = 1.0f;
 		#endif
 
-		float3 s = globalL * (planetShadow * shadow * transmittanceToStar * 
-			phaseTimesScattering + multiScatLuminance * medium.scattering);
+		float3 s = fma(transmittanceToStar * (planetShadow * shadow),
+			phaseTimesScattering, multiScatLuminance * medium.scattering) * globalL;
 		// 1 is the integration of luminance over the 4pi of a sphere, with isotropic phase function of 1 / (4 * PI).
-		result.multiScatAs1 += throughput * medium.scattering * deltaT;
+		result.multiScattAs1 = fma(throughput * medium.scattering, float3(deltaT), result.multiScattAs1);
 
 		// Integrate along the current step segment.
-		float3 sInt = (s - s * sampleTransmittance) / max(medium.extinction, FLOAT_EPS9); 
-		l += throughput * sInt; // Accumulate and also take into account the transmittance from previous steps.
+		float3 sInt = (s - (s * sampleTransmittance)) / max(medium.extinction, FLOAT_EPS9); 
+		l = fma(throughput, sInt, l); // Accumulate and also take into account the transmittance from previous steps.
 		throughput *= sampleTransmittance;
 		#endif
 	}
@@ -308,11 +309,10 @@ ScatteringResult integrateScatteredLuminance(float2 texCoords, Ray ray,
 		float3 p = fma(float3(tBottom), ray.direction, ray.origin);
 		float pHeight = length(p); float3 upVector = p / pHeight;
 		float starZenithCosAngle = dot(starDir, upVector);
-		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, 
-			atmosphere.topRadius, pHeight, starZenithCosAngle);
+		float2 uv = transmittanceRmuToUV(atmosphere.bottomRadius, atmosphere.topRadius, pHeight, starZenithCosAngle);
 		float3 transmittanceToStar = textureLod(transLUT, uv, 0.0f).rgb;
 		float nol = saturate(dot(normalize(upVector), normalize(starDir)));
-		l += globalL * transmittanceToStar * throughput * nol * atmosphere.groundAlbedo * float(M_1_PI);
+		l = fma(globalL * transmittanceToStar * throughput * atmosphere.groundAlbedo, float3(nol * float(M_1_PI)), l);
 	}
 	#endif
 
