@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Physically based atmosphere multiple scattering.
-// Based on this: https://github.com/sebh/UnrealEngineSkyAtmosphere
 
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
@@ -136,7 +135,7 @@ void main()
 			inScattLumShared[localThreadID + stride] : float3(0.0f);
 		barrier();
 	}
-	#endif
+#endif
 
 	if (localThreadID == 0)
 	{

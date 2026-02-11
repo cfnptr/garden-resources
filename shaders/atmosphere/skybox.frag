@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Physically based atmosphere skybox.
-// Based on this: https://github.com/sebh/UnrealEngineSkyAtmosphere
+// Physically based atmosphere skybox and camera view.
 
 #define USE_CAMERA_VOLUME
 
@@ -59,28 +58,6 @@ uniform pushConstants
 } pc;
 
 //**********************************************************************************************************************
-float2 skyViewToUv(bool intersectGround, float viewZenithCosAngle, float lightViewCosAngle, float viewHeight)
-{
-	float vHorizon = sqrt((viewHeight * viewHeight) - (pc.bottomRadius * pc.bottomRadius));
-	float beta = acosFast4(vHorizon / viewHeight); float zenithHorizonAngle = float(M_PI) - beta;
-	float2 uv; uv.x = sqrt(fma(-lightViewCosAngle, 0.5f, 0.5f));
-
-	if (!intersectGround)
-	{
-		float coord = acosFast4(viewZenithCosAngle) / zenithHorizonAngle;
-		uv.y = (1.0f - sqrt(1.0f - coord)) * 0.5f;
-	}
-	else
-	{
-		float coord = (acosFast4(viewZenithCosAngle) - zenithHorizonAngle) / beta;
-		uv.y = fma(sqrt(coord), 0.5f, 0.5f);
-	}
-
-	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible).
-	const float2 skyViewSize = float2(textureSize(skyViewLUT, 0));
-	return ((0.5f / skyViewSize) + uv) * (skyViewSize / (skyViewSize + 1.0f));
-}
-
 float3 getStarLuminance(float3 worldDir, bool intersectGround)
 {
 	// Note: No early exit to smooth the star disk.
@@ -98,15 +75,9 @@ void main()
 
 	if (viewHeight < pc.topRadius && depth == FAR_PLANE_DEPTH)
 	{
-		float3 upVector = normalize(pc.cameraPos); float viewZenithCosAngle = dot(worldDir, upVector);
-		float3 sideVector = normalize(cross(upVector, worldDir));
-		// Aligns toward the star light but perpendicular to up vector.
-		float3 forwardVector = normalize(cross(sideVector, upVector));
-		float2 lightOnPlane = normalize(float2(dot(pc.starDir, forwardVector), dot(pc.starDir, sideVector)));
-		float lightViewCosAngle = lightOnPlane.x;
-
 		bool intersectGround = raycast(Sphere(float3(0.0f), pc.bottomRadius), Ray(pc.cameraPos, worldDir));
-		float2 uv = skyViewToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewHeight);
+		float2 uv = skyViewToUV(skyViewLUT, pc.cameraPos, pc.bottomRadius, 
+			pc.starDir, viewHeight, intersectGround, worldDir);
 		float3 skyColor = textureLod(skyViewLUT, uv, 0.0f).rgb + getStarLuminance(worldDir, intersectGround);
 		fb.color = float4(min(skyColor, float3(FLOAT_BIG_16)), 1.0f);
 		return;

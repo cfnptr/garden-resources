@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Physically based atmosphere transmittance look up table.
-// Based on this: https://github.com/sebh/UnrealEngineSkyAtmosphere
 
 #include "atmosphere/common.gsl"
 

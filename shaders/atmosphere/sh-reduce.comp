@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: We can potentially increase localSize to 16x16 on hardware with subgroup support.
+// TODO: We can potentially increase localSize to 256 on hardware with subgroup support.
 
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 spec const uint32 SG_SHARED_SIZE = 16;

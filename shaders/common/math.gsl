@@ -93,6 +93,7 @@ float atan2(float y, float x) // C++ atan2 implementation.
 {
 	return abs(x) > abs(y) ? atan(y, x) : float(M_PI_2) - atan(x, y);
 }
+
 float acosFast4(float angle) // 0.00007 radians precision
 {
 	float x1 = abs(angle); float x2 = x1 * x1; float x3 = x2 * x1;
@@ -100,5 +101,6 @@ float acosFast4(float angle) // 0.00007 radians precision
 	r = fma(x3, -0.0187293f, r); r = sqrt(1.0f - x1) * r;
 	return angle < 0.0f ? float(M_PI) - r : r;
 }
+float asinFast4(float angle) { return float(M_PI_2) - acosFast4(angle); }
 
 #endif // MATH_GSL

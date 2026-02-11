@@ -44,7 +44,7 @@ uniform pushConstants
 	float currentTime;
 	float3 windDir;
 	float cumulusCoverage;
-	float temperature;
+	float temperatureDiff;
 } pc;
 
 //**********************************************************************************************************************
@@ -63,6 +63,6 @@ void main()
 	float3 samplePos = fma(pc.starDir, float3(rayT.x < 0.0f ? rayT.y : rayT.x), pc.cameraPos);
 	float3 fieldWindDir = calcFieldWindDir(pc.windDir, pc.currentTime);
 	float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.02f);
-	float shadow = saturate(0.5f - calcCloudCovergage(pc.cumulusCoverage, cloudData) * pc.temperature);
+	float shadow = saturate(0.5f - calcCloudCovergage(pc.cumulusCoverage, cloudData) * pc.temperatureDiff);
 	fb.shadow = float4(float3(1.0f), shadow);
 }

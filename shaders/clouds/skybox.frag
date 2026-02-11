@@ -1,0 +1,98 @@
+// Copyright 2022-2026 Nikita Fediuchin. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#define USE_CAMERA_VOLUME
+
+spec const float STEP_ADJ_DIST = 16.384f;
+spec const float SLICE_COUNT = 8.0f;
+spec const float KM_PER_SLICE = 12.0f;
+
+#include "clouds/common.gsl"
+#include "common/constants.gsl"
+
+pipelineState
+{
+	faceCulling = off;
+}
+
+in noperspective float2 fs.texCoords;
+out float4 fb.color;
+
+uniform sampler3D
+{
+	filter = linear;
+} cameraVolume;
+uniform sampler2D
+{
+	addressMode = repeat;
+	filter = linear;
+} dataFields;
+uniform sampler2D
+{
+	filter = linear;
+} vertProfile;
+uniform sampler3D
+{
+	addressMode = repeat;
+	filter = linear;
+} noiseShape;
+uniform sampler2D
+{
+	addressMode = repeat;
+	filter = linear;
+} cirrusShape;
+
+uniform CommonConstants
+{
+	COMMON_CONSTANTS
+} cc;
+
+uniform pushConstants
+{
+	float4x4 invViewProj;
+	float3 cameraPos;
+	float bottomRadius;
+	float topRadius;
+	float minDistance;
+	float maxDistance;
+	float currentTime;
+	float cumulusCoverage;
+	float cirrusCoverage;
+	float temperatureDiff;
+} pc;
+
+//**********************************************************************************************************************
+void main()
+{
+	CloudsParams clouds;
+	clouds.invViewProj = pc.invViewProj;
+	clouds.cameraPos = pc.cameraPos;
+	clouds.bottomRadius = pc.bottomRadius;
+	clouds.lightDir = cc.lightDir;
+	clouds.topRadius = pc.topRadius;
+	clouds.windDir = cc.windDir;
+	clouds.minDistance = pc.minDistance;
+	clouds.starLight = cc.starLight;
+	clouds.maxDistance = pc.maxDistance;
+	clouds.ambientLight = cc.ambientLight;
+	clouds.currentTime = pc.currentTime;
+	clouds.texCoords = fs.texCoords;
+	clouds.cumulusCoverage = pc.cumulusCoverage;
+	clouds.cirrusCoverage = pc.cirrusCoverage;
+	clouds.temperatureDiff = pc.temperatureDiff;
+	clouds.stepAdjDist = STEP_ADJ_DIST;
+
+	evaluateClouds(cameraVolume, dataFields, vertProfile, 
+		noiseShape, cirrusShape, clouds, fb.color);
+}

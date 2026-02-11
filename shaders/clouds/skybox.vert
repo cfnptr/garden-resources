@@ -12,29 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "bloom/common.gsl"
+#include "common/fullscreen.gsl"
 
-pipelineState
-{
-	faceCulling = off;
-	blending0 = on;
-}
-
-in noperspective float2 fs.texCoords;
-out float4 fb.color;
-
-uniform sampler2D hdrBuffer;
-
-uniform pushConstants
-{
-	float threshold;
-} pc;
+out noperspective float2 fs.texCoords;
 
 void main()
 {
-	float3 hdrColor = textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb;
-	float3 color = downsample(hdrBuffer, fs.texCoords);
-	if (all(greaterThanEqual(color, float3(pc.threshold))))
-		discard;
-	fb.color = float4(0.8f, 0.0f, 0.0f, 0.5f);
+	fs.texCoords = toFullscreenTexCoords(gl.vertexIndex);
+	gl.position = float4(toFullscreenPosition(fs.texCoords), 1.0f);
 }

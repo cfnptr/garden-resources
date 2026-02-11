@@ -88,6 +88,12 @@ float3 importanceSamplingNdfDggx(float2 u, float linearRoughness)
 	float sinTheta = sqrt(1.0f - cosTheta2);
 	return float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
+float3 sampleHemisphereCosine(float2 u)
+{
+	float phi = u.x * float(M_PI * 2.0);
+	float cosTheta = sqrt(u.y), sinTheta = sqrt(1.0f - u.y);
+	return float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+}
 
 float computeDielectricF0(float reflectance)
 {

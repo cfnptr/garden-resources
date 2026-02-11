@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Physically based atmosphere sky view look up table.
-// Based on this: https://github.com/sebh/UnrealEngineSkyAtmosphere
 
 #define USE_TRANSMITTANCE_LUT
 #define USE_MULTI_SCATTERING_LUT
