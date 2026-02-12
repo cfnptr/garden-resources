@@ -20,8 +20,8 @@ spec const bool USE_CUBEMAP_ONLY = false;
 spec const float SLICE_COUNT = 8.0f;
 spec const float KM_PER_SLICE = 12.0f;
 
-#include "atmosphere/common.gsl"
 #include "common/depth.gsl"
+#include "atmosphere/common.gsl"
 
 pipelineState
 {

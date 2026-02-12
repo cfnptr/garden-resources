@@ -34,6 +34,10 @@ out float4 fb.depth;
 
 uniform sampler2D hizBuffer;
 
+uniform sampler2D
+{
+	filter = linear;
+} transLUT;
 uniform sampler3D
 {
 	filter = linear;
@@ -66,6 +70,8 @@ uniform CommonConstants
 uniform pushConstants
 {
 	float3 cameraPos;
+	float groundRadius;
+	float atmTopRadius;
 	float bottomRadius;
 	float topRadius;
 	float minDistance;
@@ -82,23 +88,25 @@ void main()
 	CloudsParams clouds;
 	clouds.viewProj = cc.viewProj;
 	clouds.invViewProj = cc.invViewProj;
-	clouds.cameraPos = pc.cameraPos;
-	clouds.bottomRadius = pc.bottomRadius;
-	clouds.lightDir = cc.lightDir;
-	clouds.topRadius = pc.topRadius;
+	clouds.starDir = -cc.lightDir;
 	clouds.windDir = cc.windDir;
-	clouds.minDistance = pc.minDistance;
-	clouds.starLight = cc.starLight;
-	clouds.maxDistance = pc.maxDistance;
+	clouds.starColor = float3(1.0f); // TODO:
 	clouds.ambientLight = cc.ambientLight;
-	clouds.currentTime = pc.currentTime;
+	clouds.cameraPos = pc.cameraPos;
 	clouds.texCoords = fs.texCoords;
+	clouds.groundRadius = pc.groundRadius;
+	clouds.atmTopRadius = pc.atmTopRadius;
+	clouds.bottomRadius = pc.bottomRadius;
+	clouds.topRadius = pc.topRadius;
+	clouds.minDistance = pc.minDistance;
+	clouds.maxDistance = pc.maxDistance;
+	clouds.currentTime = pc.currentTime;
 	clouds.cumulusCoverage = pc.cumulusCoverage;
 	clouds.cirrusCoverage = pc.cirrusCoverage;
 	clouds.temperatureDiff = pc.temperatureDiff;
 	clouds.stepAdjDist = STEP_ADJ_DIST;
 
-	float depth; evaluateClouds(cameraVolume, dataFields, vertProfile, 
+	float depth; evaluateClouds(transLUT, cameraVolume, dataFields, vertProfile, 
 		noiseShape, cirrusShape, clouds, fb.color, hizBuffer, depth);
 	fb.depth = float4(depth, float3(0.0f));
 }

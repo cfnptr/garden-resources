@@ -29,6 +29,10 @@ pipelineState
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
 
+uniform sampler2D
+{
+	filter = linear;
+} transLUT;
 uniform sampler3D
 {
 	filter = linear;
@@ -62,6 +66,8 @@ uniform pushConstants
 {
 	float4x4 invViewProj;
 	float3 cameraPos;
+	float groundRadius;
+	float atmTopRadius;
 	float bottomRadius;
 	float topRadius;
 	float minDistance;
@@ -77,22 +83,24 @@ void main()
 {
 	CloudsParams clouds;
 	clouds.invViewProj = pc.invViewProj;
-	clouds.cameraPos = pc.cameraPos;
-	clouds.bottomRadius = pc.bottomRadius;
-	clouds.lightDir = cc.lightDir;
-	clouds.topRadius = pc.topRadius;
+	clouds.starDir = -cc.lightDir;
 	clouds.windDir = cc.windDir;
-	clouds.minDistance = pc.minDistance;
-	clouds.starLight = cc.starLight;
-	clouds.maxDistance = pc.maxDistance;
+	clouds.starColor = float3(1.0f); // TODO:
 	clouds.ambientLight = cc.ambientLight;
-	clouds.currentTime = pc.currentTime;
+	clouds.cameraPos = pc.cameraPos;
 	clouds.texCoords = fs.texCoords;
+	clouds.groundRadius = pc.groundRadius;
+	clouds.atmTopRadius = pc.atmTopRadius;
+	clouds.bottomRadius = pc.bottomRadius;
+	clouds.topRadius = pc.topRadius;
+	clouds.minDistance = pc.minDistance;
+	clouds.maxDistance = pc.maxDistance;
+	clouds.currentTime = pc.currentTime;
 	clouds.cumulusCoverage = pc.cumulusCoverage;
 	clouds.cirrusCoverage = pc.cirrusCoverage;
 	clouds.temperatureDiff = pc.temperatureDiff;
 	clouds.stepAdjDist = STEP_ADJ_DIST;
 
-	evaluateClouds(cameraVolume, dataFields, vertProfile, 
-		noiseShape, cirrusShape, clouds, fb.color);
+	evaluateClouds(transLUT, cameraVolume, dataFields, 
+		vertProfile, noiseShape, cirrusShape, clouds, fb.color);
 }
