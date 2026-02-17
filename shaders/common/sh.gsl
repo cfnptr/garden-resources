@@ -23,16 +23,6 @@
 #define SH3_COUNT 9  // L2: 3 * 3
 #define SH4_COUNT 16 // L3: 4 * 4
 
-float sphereQuadrantArea(float x, float y)
-{
-	return atan2(x * y, length(float3(x, y, 1.0f)));
-}
-float calcSolidAngle(float2 st, float invDim)
-{
-	float2 v0 = st - invDim; float2 v1 = st + invDim;
-	return sphereQuadrantArea(v0.x, v0.y) - sphereQuadrantArea(v0.x, v1.y) -
-		sphereQuadrantArea(v1.x, v0.y) + sphereQuadrantArea(v1.x, v1.y);
-}
 float calcSolidAngleFast(float2 st, float invDim) // Schuler's approximation
 {
 	float r2 = dot(st, st) + 1.0f;

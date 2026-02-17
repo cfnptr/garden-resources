@@ -74,7 +74,7 @@ void main()
 	}
 	if (USE_LIGHT_ABSORPTION && dot(pc.absorptionColor, pc.absorptionColor) > 0.0f)
 	{
-		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
 		float3 worldPos = calcWorldPosition(depth, fs.texCoords, cc.invViewProj);
 		hdrColor *= exp(pc.absorptionColor * length(worldPos));
 	}

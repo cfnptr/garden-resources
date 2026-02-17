@@ -46,9 +46,9 @@ uniform CommonConstants
 
 void main()
 {
-	float4 prevNdcPos = cc.prevViewProj * 
-		(cc.invViewProj * float4(fs.currNdcPos, 0.5f, 1.0f));
-	float2 velocity = calcVelocity(fs.currNdcPos, 
-		prevNdcPos.xy / prevNdcPos.w, cc.jitterOffset, cc.prevJitterOffset);
+	float3 currWorldPos = (cc.invViewProj * float4(fs.currNdcPos, 0.0f, 1.0f)).xyz;
+	float4 prevNdcPos = cc.prevViewProj * float4(normalize(currWorldPos), 0.0f);
+	float2 velocity = calcVelocity(fs.currNdcPos, prevNdcPos.xy / 
+		prevNdcPos.w, cc.jitterOffset, cc.prevJitterOffset);
 	fb.g5 = encodeGBuffer5(velocity);
 }

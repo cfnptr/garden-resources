@@ -35,7 +35,7 @@ float simplexNoise(float2 v)
 	float3 m = max(0.5f - float3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0f);
 	m = m * m; m = m * m;
 
-	float3 x = 2.0f * fract(p * c.www) - 1.0f;
+	float3 x = fma(fract(p * c.www), float3(2.0f), float3(-1.0f));
 	float3 h = abs(x) - 0.5f;
 	float3 ox = floor(x + 0.5f);
 	float3 a0 = x - ox;
@@ -67,7 +67,7 @@ float simplexNoise(float3 v)
 		i.y + float4(0.0f, i1.y, i2.y, 1.0f)) + 
 		i.x + float4(0.0f, i1.x, i2.x, 1.0f));
 
-	float n_ = 1.0f / 7.0f;
+	float n_ = float(1.0 / 7.0);
 	float3 ns = n_ * d.wyz - d.xzx;
 	float4 j = p - 49.0f * floor(p * ns.z * ns.z);
 	float4 x_ = floor(j * ns.z);
@@ -77,11 +77,11 @@ float simplexNoise(float3 v)
 	float4 h = 1.0f - abs(x) - abs(y);
 	float4 b0 = float4(x.xy, y.xy);
 	float4 b1 = float4(x.zw, y.zw);
-	float4 s0 = floor(b0) * 2.0f + 1.0f;
-	float4 s1 = floor(b1) * 2.0f + 1.0f;
+	float4 s0 = fma(floor(b0), float4(2.0f), float4(1.0f));
+	float4 s1 = fma(floor(b1), float4(2.0f), float4(1.0f));
 	float4 sh = -step(h, float4(0.0f));
-	float4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-	float4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+	float4 a0 = fma(s0.xzyw, sh.xxyy, b0.xzyw);
+	float4 a1 = fma(s1.xzyw, sh.zzww, b1.xzyw);
 	float3 p0 = float3(a0.xy, h.x);
 	float3 p1 = float3(a0.zw, h.y);
 	float3 p2 = float3(a1.xy, h.z);

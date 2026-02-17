@@ -17,7 +17,7 @@
 #ifndef GBUFFER_GSL
 #define GBUFFER_GSL
 
-#include "common/math.gsl"
+#include "common/normal-mapping.gsl"
 
 #define G_BUFFER_BASE_COLOR 0
 #define G_BUFFER_SPEC_FACTOR 0
@@ -148,30 +148,6 @@ GBufferValues gBufferValuesDefault()
 }
 
 //**********************************************************************************************************************
-// Signed Octahedron Normal Encoding (R10G10B10A2)
-// https://johnwhite3d.blogspot.com/2017/10/signed-octahedron-normal-encoding.html
-
-float3 encodeNormalOct(float3 normal)
-{
-	normal = normalize(normal);
-	normal /= (abs(normal.x) + abs(normal.y) + abs(normal.z));
-	float y = fma(normal.y, 0.5f, 0.5f);
-	float x = fma(normal.x, 0.5f, y);
-	y = fma(normal.x, -0.5f, y);
-	float z = saturate(normal.z * FLOAT32_MAX);
-	return float3(x, y, z);
-}
-float3 decodeNormalOct(float3 encoded)
-{
-	float3 normal;
-	normal.x = (encoded.x - encoded.y);
-	normal.y = (encoded.x + encoded.y) - 1.0f;
-	normal.z = encoded.z * 2.0f - 1.0f;
-	normal.z = normal.z * (1.0f - abs(normal.x) - abs(normal.y));
-	return normalize(normal);
-}
-
-//**********************************************************************************************************************
 float4 encodeGBuffer0(float3 baseColor, float specularFactor)
 {
 	return float4(baseColor, specularFactor);
@@ -249,7 +225,7 @@ float3 decodeNormal(float4 gBufferData) { return decodeNormalOct(gBufferData.gba
 float decodeShadow(float4 gBufferData) { return gBufferData[G_BUFFER_SHADOW_COMP]; }
 float3 decodeEmissiveColor(float4 gBufferData) { return gBufferData.rgb; }
 float decodeEmissiveFactor(float4 gBufferData) { return gBufferData[G_BUFFER_EM_FACTOR_COMP]; }
-float2 decodeVelocity(float4 gBufferData) { return gBufferData.rg; }
+float2 decodeVelocity(float4 gBufferData) { return gBufferData.xy; }
 
 float3 decodeBaseColor(const GBufferData data) { return decodeBaseColor(data.g[G_BUFFER_BASE_COLOR]); }
 float decodeSpecularFactor(const GBufferData data) { return decodeSpecularFactor(data.g[G_BUFFER_SPEC_FACTOR]); }

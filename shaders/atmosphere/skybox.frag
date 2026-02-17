@@ -70,7 +70,7 @@ float3 getStarLuminance(float3 worldDir, bool intersectGround)
 
 void main()
 {
-	float depth = USE_CUBEMAP_ONLY ? FAR_PLANE_DEPTH : textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+	float depth = USE_CUBEMAP_ONLY ? FAR_PLANE_DEPTH : textureLod(depthBuffer, fs.texCoords, 0.0f).x;
 	float3 worldDir = calcViewDirection(fs.texCoords, pc.invViewProj); float viewHeight = length(pc.cameraPos);
 
 	if (viewHeight < pc.topRadius && depth == FAR_PLANE_DEPTH)

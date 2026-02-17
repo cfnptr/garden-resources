@@ -54,7 +54,7 @@ float3 texCoordsToView(float2 texCoords, float eyeZ)
 }
 float3 fetchViewPos(float2 texCoords)
 {
-	float depth = textureLod(hizBuffer, texCoords, 0.0f).r;
+	float depth = MIN_HIZ(textureLod(hizBuffer, texCoords, 0.0f));
 	depth = calcLinearDepthIRZ(depth, pc.nearPlane); // TODO: support othrographic depth linearization.
 	return texCoordsToView(texCoords, depth);
 }

@@ -64,7 +64,7 @@ float2 area(float2 dist, float e1, float e2)
 	float2 texCoords = fma(round(float2(e1, e2) * 4.0f), float2(AREA_LUT_MAX_DISTANCE), dist);
     
 	// We do a scale and bias for mapping to texel space:
-	texCoords = fma(texCoords, AREA_LUT_PIXEL_SIZE, AREA_LUT_PIXEL_SIZE * 0.5f);
+	texCoords = fma(texCoords, AREA_LUT_PIXEL_SIZE, AREA_LUT_PIXEL_SIZE / 2.0f);
 	return textureLod(areaLUT, texCoords, 0.0f).rg;
 }
 
@@ -74,7 +74,7 @@ float2 areaDiag(float2 dist, float2 e)
 	float2 texCoords = fma(e, float2(AREA_LUT_MAX_DISTANCE_DIAG), dist);
 
 	// We do a scale and bias for mapping to texel space:
-	texCoords = fma(texCoords, AREA_LUT_PIXEL_SIZE, AREA_LUT_PIXEL_SIZE * 0.5f);
+	texCoords = fma(texCoords, AREA_LUT_PIXEL_SIZE, AREA_LUT_PIXEL_SIZE / 2.0f);
 
 	// Diagonal areas are on the second half of the texture:
 	texCoords.x += 0.5f;
@@ -211,12 +211,13 @@ void detectHorizontalCornerPattern(inout float2 weights, float4 texCoords, float
 	float2 leftRight = step(d.xy, d.yx);
 	float2 rounding = leftRight * (1.0 - CORNER_ROUNDING_NORM);
 	rounding /= leftRight.x + leftRight.y; // Reduce blending for pixels in the center of a line.
+	rounding = -rounding;
 
 	float2 factor = float2(1.0f);
-	factor.x -= rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2(0,  1)).r;
-	factor.x -= rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2(1,  1)).r;
-	factor.y -= rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2(0, -2)).r;
-	factor.y -= rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2(1, -2)).r;
+	factor.x += rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2(0,  1)).r;
+	factor.x += rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2(1,  1)).r;
+	factor.y += rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2(0, -2)).r;
+	factor.y += rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2(1, -2)).r;
 	weights *= saturate(factor);
 }
 void detectVerticalCornerPattern(inout float2 weights, float4 texCoords, float2 d)
@@ -224,12 +225,13 @@ void detectVerticalCornerPattern(inout float2 weights, float4 texCoords, float2 
 	float2 leftRight = step(d.xy, d.yx);
 	float2 rounding = leftRight * (1.0 - CORNER_ROUNDING_NORM);
 	rounding /= leftRight.x + leftRight.y;
+	rounding = -rounding;
 
 	float2 factor = float2(1.0f);
-	factor.x -= rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2( 1, 0)).g;
-	factor.x -= rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2( 1, 1)).g;
-	factor.y -= rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2(-2, 0)).g;
-	factor.y -= rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2(-2, 1)).g;
+	factor.x += rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2( 1, 0)).g;
+	factor.x += rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2( 1, 1)).g;
+	factor.y += rounding.x * textureLodOffset(edgesBuffer, texCoords.xy, 0.0f, int2(-2, 0)).g;
+	factor.y += rounding.y * textureLodOffset(edgesBuffer, texCoords.zw, 0.0f, int2(-2, 1)).g;
 	weights *= saturate(factor);
 }
 

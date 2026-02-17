@@ -23,7 +23,7 @@ pipelineState
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
 
-uniform sampler2D depthBuffer;
+uniform sampler2D hizBuffer;
 
 uniform pushConstants
 {
@@ -32,7 +32,7 @@ uniform pushConstants
 
 void main()
 {
-	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+	float depth = MIN_HIZ(textureLod(hizBuffer, fs.texCoords, 0.0f));
 	if (IS_DEPTH_GREATER(depth, pc.farPlanes.x))
 		fb.color = float4(0.0f, 0.8f, 0.0f, 0.5f);
 	else if (IS_DEPTH_GREATER(depth, pc.farPlanes.y))

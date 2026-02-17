@@ -48,7 +48,7 @@ uniform sampler2D g3;
 uniform sampler2D g4;
 
 uniform sampler2D depthBuffer;
-uniform sampler2D shadowBuffer;
+uniform sampler2D shadBuffer;
 uniform sampler2D aoBuffer;
 uniform sampler2D
 {
@@ -82,7 +82,7 @@ uniform pushConstants
 //**********************************************************************************************************************
 void main()
 {
-	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
 	if (depth == FAR_PLANE_DEPTH)
 		discard;
 
@@ -93,7 +93,7 @@ void main()
 	gBuffer.shadow.rgb = pc.shadowColor.rgb;
 	if (USE_SHADOW_BUFFER)
 	{
-		float4 accumShadow = textureLod(shadowBuffer, fs.texCoords, 0.0f);
+		float4 accumShadow = textureLod(shadBuffer, fs.texCoords, 0.0f);
 		gBuffer.shadow.rgb *= accumShadow.rgb;
 		gBuffer.shadow.a = min(gBuffer.shadow.a, accumShadow.a);
 	}

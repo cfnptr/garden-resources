@@ -26,7 +26,6 @@
 #include "common/depth.gsl"
 #include "common/gbuffer.gsl"
 #include "common/tone-mapping.gsl"
-#include "common/normal-mapping.gsl"
 #include "editor/gbuffer-data.h"
 
 pipelineState
@@ -47,8 +46,8 @@ uniform sampler2D g5;
 uniform sampler2D hdrBuffer;
 uniform sampler2D depthBuffer;
 uniform sampler2D reflBuffer;
-uniform sampler2D shadowBuffer;
-uniform sampler2D shadowBlurBuffer;
+uniform sampler2D shadBuffer;
+uniform sampler2D shadBlurBuffer;
 uniform sampler2D aoBuffer;
 uniform sampler2D aoBlurBuffer;
 uniform sampler2D giBuffer;
@@ -73,60 +72,27 @@ void main()
 		discard;
 
 	if (pc.drawMode == G_BUFFER_DRAW_MODE_HDR_BUFFER)
-	{
-		float3 hdrColor = textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(gammaCorrection(hdrColor), 1.0f);
-	}
+		fb.color = float4(gammaCorrection(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_DEPTH_BUFFER)
-	{
-		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
-		fb.color = float4(float3(pow(depth, (1.0f / 2.0f))), 1.0f);
-	}
+		fb.color = float4(float3(pow(textureLod(depthBuffer, fs.texCoords, 0.0f).x, (1.0f / 2.0f))), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_NORMAL_BUFFER)
-	{
 		fb.color = float4(gammaCorrection(packNormal(gBuffer.normal), DEFAULT_GAMMA), 1.0f);
-	}
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_REFLECTION_BUFFER)
-	{
-		float3 reflection = textureLod(reflBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(reflection, 1.0f);
-	}
+		fb.color = float4(textureLod(reflBuffer, fs.texCoords, 0.0f).rgb, 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GLOBAL_SHADOW_COLOR)
-	{
-		float3 shadowColor = textureLod(shadowBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(shadowColor, 1.0f);
-	}
+		fb.color = float4(textureLod(shadBuffer, fs.texCoords, 0.0f).rgb, 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GLOBAL_SHADOW_ALPHA)
-	{
-		float shadowAlpha = textureLod(shadowBuffer, fs.texCoords, 0.0f).a;
-		fb.color = float4(float3(shadowAlpha), 1.0f);
-	}
+		fb.color = float4(float3(textureLod(shadBuffer, fs.texCoords, 0.0f).a), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GLOBAL_AO)
-	{
-		float ao = textureLod(aoBuffer, fs.texCoords, 0.0f).r;
-		fb.color = float4(float3(ao), 1.0f);
-	}
+		fb.color = float4(float3(textureLod(aoBuffer, fs.texCoords, 0.0f).x), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GI_BUFFER)
-	{
-		float3 giColor = textureLod(giBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(gammaCorrection(giColor), 1.0f);
-	}
+		fb.color = float4(gammaCorrection(textureLod(giBuffer, fs.texCoords, 0.0f).rgb), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_OIT_ACCUM_COLOR)
-	{
-		float3 oitColor = textureLod(oitAccumBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(gammaCorrection(oitColor), 1.0f);
-	}
+		fb.color = float4(gammaCorrection(textureLod(oitAccumBuffer, fs.texCoords, 0.0f).rgb), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_OIT_ACCUM_ALPHA)
-	{
-		float oitAlpha = textureLod(oitAccumBuffer, fs.texCoords, 0.0f).a;
-		fb.color = float4(float3(oitAlpha), 1.0f);
-	}
+		fb.color = float4(float3(textureLod(oitAccumBuffer, fs.texCoords, 0.0f).a), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_OIT_REVEAL)
-	{
-		float oitReveal = textureLod(oitRevealBuffer, fs.texCoords, 0.0f).r;
-		fb.color = float4(float3(oitReveal), 1.0f);
-	}
-
+		fb.color = float4(float3(textureLod(oitRevealBuffer, fs.texCoords, 0.0f).x), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_BASE_COLOR)
 		fb.color = float4(gBuffer.baseColor, 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_SPECULAR_FACTOR)
@@ -147,36 +113,21 @@ void main()
 		fb.color = float4(float3(gBuffer.emissiveFactor), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_CC_ROUGHNESS)
 		fb.color = float4(float3(gBuffer.clearCoatRoughness), 1.0f);
-	else if (pc.drawMode == G_BUFFER_DRAW_MODE_CC_NORMAL)
-		fb.color = float4(gammaCorrection(packNormal(gBuffer.clearCoatNormal), DEFAULT_GAMMA), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_VELOCITY)
 		fb.color = float4(abs(gBuffer.velocity), float2(0.0f));
-
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_COLOR)
-	{
-		float3 shadowColor = textureLod(shadowBlurBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(shadowColor, 1.0f);
-	}
+		fb.color = float4(textureLod(shadBlurBuffer, fs.texCoords, 0.0f).rgb, 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_ALPHA)
-	{
-		float shadowAlpha = textureLod(shadowBlurBuffer, fs.texCoords, 0.0f).a;
-		fb.color = float4(float3(shadowAlpha), 1.0f);
-	}
+		fb.color = float4(float3(textureLod(shadBlurBuffer, fs.texCoords, 0.0f).a), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_GLOBAL_BLURED_AO)
-	{
-		float ao = textureLod(aoBlurBuffer, fs.texCoords, 0.0f).r;
-		fb.color = float4(float3(ao), 1.0f);
-	}
+		fb.color = float4(float3(textureLod(aoBlurBuffer, fs.texCoords, 0.0f).x), 1.0f);
+	else if (pc.drawMode == G_BUFFER_DRAW_MODE_HDR_LUMA)
+		fb.color = float4(float3(rgbToLuma(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb)), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_WORLD_POSITION)
 	{
-		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
 		float3 worldPosition = calcWorldPosition(depth, fs.texCoords, pc.invViewProj);
 		fb.color = float4(log(abs(worldPosition) + float3(1.0f)) * 0.1f, 1.0f);
-	}
-	else if (pc.drawMode == G_BUFFER_DRAW_MODE_HDR_LUMA)
-	{
-		float3 hdrColor = textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb;
-		fb.color = float4(float3(rgbToLuma(hdrColor)), 1.0f);
 	}
 	else fb.color = float4(1.0f, 0.0f, 1.0f, 1.0f);
 

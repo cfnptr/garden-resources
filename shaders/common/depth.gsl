@@ -25,11 +25,15 @@
 #define IS_DEPTH_LESS_EQUAL(a, b) (a) <= (b)
 #define IS_DEPTH_GREATER(a, b) (a) > (b)
 #define IS_DEPTH_GREATER_EQUAL(a, b) (a) >= (b)
+#define TO_ONE_DEPTH(depth) (depth)
 
 #define MIN_DEPTH_X(depth) min(depth)
 #define MIN_DEPTH(a, b) min(a, b)
 #define MAX_DEPTH_X(depth) max(depth)
 #define MAX_DEPTH(a, b) max(a, b)
+
+#define MIN_HIZ(hizDepth) hizDepth.x
+#define MAX_HIZ(hizDepth) hizDepth.y
 
 float3 calcWorldPosition(float depth, float2 texCoords, float4x4 invViewProj)
 {

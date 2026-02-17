@@ -48,14 +48,14 @@ bool isIntersected(Sphere sphere, Aabb aabb)
 float2 raycast2(Sphere sphere, Ray ray)
 {
 	float3 l = ray.origin - sphere.position;
-	float b = 2.0f * dot(ray.direction, l);
+	float b = dot(ray.direction, l) * -2.0f;
 	float c = dot(l, l) - sphere.radius * sphere.radius;
-	float discriminant = b * b - 4.0f * c;
+	float discriminant = fma(b, b, c * -4.0f);
 	if (discriminant < 0.0f)
 		return float2(-FLOAT32_MAX);
 
 	float discrSqrt = sqrt(discriminant);
-	return float2(-b - discrSqrt, -b + discrSqrt) * 0.5f;
+	return float2(b - discrSqrt, b + discrSqrt) * 0.5f;
 }
 bool raycast(Sphere sphere, Ray ray)
 {

@@ -27,7 +27,7 @@ in noperspective float2 fs.texCoords;
 out float4 fb.shadow;
 
 uniform sampler2D gNormals;
-uniform sampler2D depthBuffer;
+uniform sampler2D hizBuffer;
 
 uniform sampler2DArrayShadow
 {
@@ -39,7 +39,7 @@ uniform sampler2DArray
 {
 	filter = linear;
 	addressMode = clampToBorder;
-} transparentMap;
+} transMap;
 
 uniform ShadowData
 {
@@ -49,7 +49,8 @@ uniform ShadowData
 //**********************************************************************************************************************
 void main()
 {
-	float pixelDepth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+	float2 hizDepth = textureLod(hizBuffer, fs.texCoords, 0.0f).xy;
+	float pixelDepth = MIN_HIZ(hizDepth) == FAR_PLANE_DEPTH ? MAX_HIZ(hizDepth) : MIN_HIZ(hizDepth);
 	if (IS_DEPTH_LESS(pixelDepth, shadowData.farPlanes.z))
 		discard;
 
@@ -59,7 +60,7 @@ void main()
 		shadowData.starDir, shadowData.normBias, normal, cascadeID, lightCoords);
 	float shadow = evaluateCsmShadow(depthMap, cascadeID, lightCoords);
 
-	float4 transparency = evaluateCsmTransparency(transparentMap, cascadeID, lightCoords);
+	float4 transparency = evaluateCsmTransparency(transMap, cascadeID, lightCoords);
 	transparency = lerp(float4(1.0f), transparency, shadow); // Note: Fix for peter-panning.
 	fb.shadow = transparency * float4(float3(1.0f), shadow);
 }

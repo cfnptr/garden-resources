@@ -15,8 +15,8 @@
 #include "common/depth.gsl"
 
 spec const uint32 KERNEL_RADIUS = 3;
-#define BLUR_SIGMA (KERNEL_RADIUS * 0.5f)
-#define BLUR_FALLOFF (1.0f / (-2.0f * BLUR_SIGMA * BLUR_SIGMA))
+#define BLUR_SIGMA (KERNEL_RADIUS / 2.0f)
+#define BLUR_FALLOFF ((1.0f / (-2.0f * BLUR_SIGMA * BLUR_SIGMA)))
 
 pipelineState
 {
@@ -26,12 +26,9 @@ pipelineState
 in noperspective float2 fs.texCoords;
 out float4 fb.data;
 
-uniform sampler2D
-{
-	filter = linear;
-} srcBuffer;
+uniform sampler2D srcBuffer;
 
-uniform sampler2D hizBuffer;
+uniform sampler2D depthBuffer;
 
 uniform pushConstants
 {
@@ -40,30 +37,26 @@ uniform pushConstants
 	float sharpness;
 } pc;
 
-float4 depthBilateralBlur(float2 texCoords, uint32 r, float depth, inout float weight)
+float4 depthBilateralBlur(float2 texCoords, float r2, float depth, inout float totalWeight)
 {
-	float d = textureLod(hizBuffer, texCoords, 0.0f).r;
-	d = calcLinearDepthIRZ(d, pc.nearPlane);
-	float4 c = textureLod(srcBuffer, texCoords, 0.0f);
-	float diff = (d - depth) * pc.sharpness;
-	float w = exp2((r * r * BLUR_FALLOFF) - diff * diff);
-	weight += w;
+	float d = calcLinearDepthIRZ(textureLod(depthBuffer, texCoords, 0.0f).x, pc.nearPlane);
+	float4 c = textureLod(srcBuffer, texCoords, 0.0f); float diff = (d - depth);
+	float w = exp2(fma(r2, BLUR_FALLOFF, diff * diff * pc.sharpness)); totalWeight += w;
 	return c * w;
 }
 
 void main()
 {
-	float depth = textureLod(hizBuffer, fs.texCoords, 0.0f).r;
-	depth = calcLinearDepthIRZ(depth, pc.nearPlane);
-	float4 sum = textureLod(srcBuffer, fs.texCoords, 0.0f);
-	float weight = 1.0f;
+	float depth = calcLinearDepthIRZ(textureLod(depthBuffer, fs.texCoords, 0.0f).x, pc.nearPlane);
+	float4 totalColor = textureLod(srcBuffer, fs.texCoords, 0.0f);
+	float totalWeight = 1.0f;
 
 	for (int32 r = 1; r <= KERNEL_RADIUS; r++)
 	{
-		float2 offset = pc.texelSize * r;
-		sum += depthBilateralBlur(fs.texCoords + offset, r, depth, weight);
-		sum += depthBilateralBlur(fs.texCoords - offset, r, depth, weight);
+		float2 offset = pc.texelSize * r; float r2 = float(r * r);
+		totalColor += depthBilateralBlur(fs.texCoords + offset, r2, depth, totalWeight);
+		totalColor += depthBilateralBlur(fs.texCoords - offset, r2, depth, totalWeight);
 	}
 
-	fb.data = sum / weight;
+	fb.data = totalColor / totalWeight;
 }

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "common/depth.gsl"
+
 pipelineState
 {
 	faceCulling = off;
@@ -36,11 +38,11 @@ void main()
 {
 	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
 	float cloudsDepth = textureLod(cloudsDepth, fs.texCoords, 0.0f).x;
-	if (depth > cloudsDepth)
+	if (IS_DEPTH_GREATER(depth, cloudsDepth))
 		discard;
 
 	float4 color = textureLod(cloudsBuffer, fs.texCoords, 0.0f);
-	if (depth > 0.0f) // Smoothing sharp transition.
+	if (IS_DEPTH_GREATER(depth, FAR_PLANE_DEPTH)) // Smoothing sharp transition.
 		color.a *= saturate((cloudsDepth - depth) * 1000000.0f);
 	fb.color = color;
 }

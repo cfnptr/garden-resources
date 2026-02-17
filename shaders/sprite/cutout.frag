@@ -40,8 +40,8 @@ earlyFragmentTests in;
 void main()
 {
 	InstanceData instance = instance.data[pc.instanceIndex];
-	float3 texCoords = float3(fs.texCoords * 
-		instance.uvSize + instance.uvOffset, pc.colorMapLayer);
+	float3 texCoords = float3(fma(fs.texCoords, 
+		instance.uvSize, instance.uvOffset), pc.colorMapLayer);
 	float4 color = texture(colorMap, texCoords) * instance.color;
 
 	if (color.a < pc.alphaCutoff)

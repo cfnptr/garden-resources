@@ -49,7 +49,7 @@ const float3x3 acesToRgbMat = float3x3
 // https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
 float3 rrtAndOdtFit(float3 v)
 {
-	return (v * (v + 0.0245786) - 0.000090537) / fma(v, fma(
+	return fma(v, v + 0.0245786f, float3(-0.000090537)) / fma(v, fma(
 		float3(0.983729f), v, float3(0.4329510f)), float3(0.238081f));
 }
 float3 acesFilmicTonemap(float3 x)

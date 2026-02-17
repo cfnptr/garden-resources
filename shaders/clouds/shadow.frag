@@ -27,7 +27,7 @@ pipelineState
 in noperspective float2 fs.texCoords;
 out float4 fb.shadow;
 
-uniform sampler2D depthBuffer;
+uniform sampler2D hizBuffer;
 
 uniform sampler2D
 {
@@ -50,7 +50,8 @@ uniform pushConstants
 //**********************************************************************************************************************
 void main()
 {
-	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).r;
+	float2 hizDepth = textureLod(hizBuffer, fs.texCoords, 0.0f).xy;
+	float depth = MIN_HIZ(hizDepth) == FAR_PLANE_DEPTH ? MAX_HIZ(hizDepth) : MIN_HIZ(hizDepth);
 	if (depth == FAR_PLANE_DEPTH)
 		discard;
 
@@ -63,6 +64,6 @@ void main()
 	float3 samplePos = fma(pc.starDir, float3(rayT.x < 0.0f ? rayT.y : rayT.x), pc.cameraPos);
 	float3 fieldWindDir = calcFieldWindDir(pc.windDir, pc.currentTime);
 	float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.02f);
-	float shadow = saturate(0.5f - calcCloudCovergage(pc.cumulusCoverage, cloudData) * pc.temperatureDiff);
-	fb.shadow = float4(float3(1.0f), shadow);
+	float shadow = 1.0f - calcCloudCovergage(pc.cumulusCoverage, cloudData) * pc.temperatureDiff;
+	fb.shadow = float4(float3(1.0f), saturate(pow(shadow, 8.0f)));
 }
