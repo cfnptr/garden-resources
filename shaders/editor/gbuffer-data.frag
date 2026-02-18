@@ -53,6 +53,7 @@ uniform sampler2D aoBlurBuffer;
 uniform sampler2D giBuffer;
 uniform sampler2D oitAccumBuffer;
 uniform sampler2D oitRevealBuffer;
+uniform sampler2D disocclMap;
 
 uniform pushConstants
 {
@@ -123,6 +124,8 @@ void main()
 		fb.color = float4(float3(textureLod(aoBlurBuffer, fs.texCoords, 0.0f).x), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_HDR_LUMA)
 		fb.color = float4(float3(rgbToLuma(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb)), 1.0f);
+	else if (pc.drawMode == G_BUFFER_DRAW_MODE_DISOCCLUSION)
+		fb.color = float4(float3(textureLod(disocclMap, fs.texCoords, 0.0f).x), 1.0f);
 	else if (pc.drawMode == G_BUFFER_DRAW_MODE_WORLD_POSITION)
 	{
 		float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;

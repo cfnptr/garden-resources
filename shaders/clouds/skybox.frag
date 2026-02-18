@@ -14,7 +14,7 @@
 
 #define USE_CAMERA_VOLUME
 
-spec const float STEP_ADJ_DIST = 16.384f;
+spec const float STEP_SIZE_FACTOR = 1.0f;
 spec const float SLICE_COUNT = 8.0f;
 spec const float KM_PER_SLICE = 12.0f;
 
@@ -99,7 +99,7 @@ void main()
 	clouds.cumulusCoverage = pc.cumulusCoverage;
 	clouds.cirrusCoverage = pc.cirrusCoverage;
 	clouds.temperatureDiff = pc.temperatureDiff;
-	clouds.stepAdjDist = STEP_ADJ_DIST;
+	clouds.stepSizeFactor = STEP_SIZE_FACTOR;
 
 	evaluateClouds(transLUT, cameraVolume, dataFields, 
 		vertProfile, noiseShape, cirrusShape, clouds, fb.color);

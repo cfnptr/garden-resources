@@ -14,8 +14,9 @@
 
 #define USE_CAMERA_VOLUME
 #define USE_CLOUDS_DEPTH
+#define USE_CLOUDS_REPROJECTION
 
-spec const float STEP_ADJ_DIST = 16.384f;
+spec const float STEP_SIZE_FACTOR = 1.0f;
 spec const float SLICE_COUNT = 8.0f;
 spec const float KM_PER_SLICE = 12.0f;
 
@@ -32,6 +33,12 @@ in noperspective float2 fs.texCoords;
 out float4 fb.color;
 out float4 fb.depth;
 
+uniform sampler2D
+{
+	filter = linear;
+} camView;
+
+uniform sampler2D disocclMap;
 uniform sampler2D hizBuffer;
 
 uniform sampler2D
@@ -71,6 +78,7 @@ uniform pushConstants
 {
 	float3 cameraPos;
 	float groundRadius;
+	uint2 bayerPos;
 	float atmTopRadius;
 	float bottomRadius;
 	float topRadius;
@@ -87,6 +95,9 @@ void main()
 {
 	CloudsParams clouds;
 	clouds.viewProj = cc.viewProj;
+	clouds.prevViewProj = cc.prevViewProj;
+	clouds.fragCoord = uint2(gl.fragCoord.xy);
+	clouds.bayerPos = pc.bayerPos;
 	clouds.invViewProj = cc.invViewProj;
 	clouds.starDir = -cc.lightDir;
 	clouds.windDir = cc.windDir;
@@ -104,9 +115,9 @@ void main()
 	clouds.cumulusCoverage = pc.cumulusCoverage;
 	clouds.cirrusCoverage = pc.cirrusCoverage;
 	clouds.temperatureDiff = pc.temperatureDiff;
-	clouds.stepAdjDist = STEP_ADJ_DIST;
+	clouds.stepSizeFactor = STEP_SIZE_FACTOR;
 
 	float depth; evaluateClouds(transLUT, cameraVolume, dataFields, vertProfile, 
-		noiseShape, cirrusShape, clouds, fb.color, hizBuffer, depth);
+		noiseShape, cirrusShape, clouds, fb.color, camView, disocclMap, hizBuffer, depth);
 	fb.depth = float4(depth, float3(0.0f));
 }

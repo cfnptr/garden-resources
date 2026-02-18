@@ -41,13 +41,14 @@
 #define G_BUFFER_DRAW_MODE_CC_ROUGHNESS 22
 #define G_BUFFER_DRAW_MODE_CC_NORMAL 23
 #define G_BUFFER_DRAW_MODE_VELOCITY 24
+#define G_BUFFER_DRAW_MODE_DISOCCLUSION 25
 
-#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_COLOR 25
-#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_ALPHA 26
-#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_AO 27
-#define G_BUFFER_DRAW_MODE_WORLD_POSITION 28
-#define G_BUFFER_DRAW_MODE_HDR_LUMA 29
-#define G_BUFFER_DRAW_MODE_COUNT 30
+#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_COLOR 26
+#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_ALPHA 27
+#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_AO 28
+#define G_BUFFER_DRAW_MODE_WORLD_POSITION 29
+#define G_BUFFER_DRAW_MODE_HDR_LUMA 30
+#define G_BUFFER_DRAW_MODE_COUNT 31
 
 #ifdef __GARDEN__
 static const char* G_BUFFER_DRAW_MODE_NAMES[G_BUFFER_DRAW_MODE_COUNT] =
@@ -58,7 +59,7 @@ static const char* G_BUFFER_DRAW_MODE_NAMES[G_BUFFER_DRAW_MODE_COUNT] =
 
 	"Base Color", "Specular Factor", "Metallic", "Roughness", "Material AO", 
 	"Reflectance", "Material Shadow", "Emissive Color", "Emissive Factor", 
-	"Clear Coat Roughness", "Clear Coat Normal", "Velocity",
+	"Clear Coat Roughness", "Clear Coat Normal", "Velocity", "Disocclusion",
 	
 
 	"Global Blured Shadow Color", "Global Blured Shadow Alpha", 
