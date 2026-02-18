@@ -90,7 +90,7 @@ float calcCloudMipLevel(float3 cameraPos, float3 samplePos, float scale, float o
 }
 float3 sampleDataFields(sampler2D dataFields, float3 cameraPos, float3 samplePos, float3 windDir, float posScale)
 {
-	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 2.0f, -15.0f);
+	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 1.5f, -15.0f);
 	samplePos += windDir;
 
 	#if defined(USE_TRIPLANAR_CLOUDS)
@@ -126,7 +126,7 @@ float3 sampleCirrusShape(sampler2D cirrusShape, float3 cameraPos, float3 sampleP
 float calcCloudDensity(sampler3D noiseShape, float3 cameraPos, 
 	float3 samplePos, float3 cloudData, float dimProfile, float3 windDir)
 {
-	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 0.5f, -5.0f);
+	float mipLod = calcCloudMipLevel(cameraPos, samplePos, 0.5f, -15.0f);
 	float4 noise = textureLod(noiseShape, (samplePos + windDir) * 0.4f, mipLod);
 	float wispyNoise = lerp(noise.r, noise.g, dimProfile);
 	float billowyNoise = lerp(noise.b * 0.3f, noise.a * 0.3f, pow(dimProfile, 0.25f));
@@ -176,7 +176,7 @@ float beerLambertCloud(float accumDensity, float cosTheta)
 float calcMultiscattering(float hgMultiScatt, float stepSize, float3 cloudData, 
 	float relativeHeight, float cloudCoverage, float dimProfile, float transmittacne)
 {
-	const float depthPower = 0.1f, heightPower = 0.5f;
+	const float depthPower = 0.25f, heightPower = 0.35f;
 	return hgMultiScatt * remapConstClamp(dimProfile * stepSize * 1000.0f, 0.1f, 1.0f, 0.0f, 1.0f) * 
 		pow(cloudCoverage * cloudData.z, 0.25f) * pow(transmittacne, depthPower) * pow(relativeHeight, heightPower);
 }
@@ -239,7 +239,8 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 	if (disocclusion == 0.0f && clouds.bayerPos.x != UINT32_MAX &&
 		all(bool4(lessThan(prevTexCoords, float2(1.0f)), greaterThan(prevTexCoords, float2(0.0f)))))
 	{
-		if (clouds.fragCoord % 4 != clouds.bayerPos)
+		float prevDepth = MAX_HIZ(textureLod(hizBuffer, prevTexCoords, 0.0f));
+		if (clouds.fragCoord % 4 != clouds.bayerPos && IS_DEPTH_LESS_EQUAL(prevDepth, hizDepth))
 		{
 			color = textureLod(camView, prevTexCoords, 0.0f);
 			#ifdef USE_CLOUDS_DEPTH
@@ -250,8 +251,7 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 	}
 	#endif
 
-	// Ambient luminance fixes dark clouds bottom on a sunset/sunrise.
-	float ambientLum = clamp(calcLum(clouds.ambientLight), 0.15f, 1.0f);
+	const float densityFactor = 5.0f;
 	float invThickness = 1.0f / (clouds.topRadius - clouds.bottomRadius);
 	float3 fieldWindDir = calcFieldWindDir(clouds.windDir, clouds.currentTime);
 	float3 shapeWindDir = calcShapeWindDir(clouds.windDir, clouds.currentTime);
@@ -289,9 +289,9 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 				continue;
 			}
 
-			float ambienScattFactor = 50.0f / (clouds.stepSizeFactor * 2.0f);
+			cloudDensity *= clouds.temperatureDiff * (densityFactor * clouds.stepSizeFactor);
 			float occlustion = cloudDensity * (1.0f - lightAbsorption);
-			float attenuation = beerLambertCloud(cloudDensity * ambienScattFactor * ambientLum, cosTheta);
+			float attenuation = beerLambertCloud(cloudDensity, cosTheta);
 			float ambientScattering = pow(1.0f - dimProfile, 0.5f) * attenuation;
 			ambientIntensity += ambientScattering * occlustion; lightAbsorption += occlustion;
 			distanceSum += rayT.x * occlustion;
@@ -309,8 +309,8 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 				lightStep += lightStep * 1.3f;
 			}
 
-			const float directScattFactor = 50.0f;
-			float lightTransmittance = beerLambertCloud(lightDensity * directScattFactor, cosTheta);
+			lightDensity *= densityFactor * 10.0f; // 10 samples
+			float lightTransmittance = beerLambertCloud(lightDensity, cosTheta);
 			float multiscattering = calcMultiscattering(hgMultiScatt, stepSize, cloudData, 
 				relativeHeight, cloudCoverage, dimProfile, lightTransmittance);
 			float directScattering = fma(lightTransmittance, hgScattering, multiscattering);
@@ -339,9 +339,8 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 
 		if (cirrusDensity > FLOAT_EPS6)
 		{
-			const float ambientScattFactor = 1.5f;
 			float occlustion = cirrusDensity * (1.0f - lightAbsorption);
-			float attenuation = beerLambertCloud(cirrusDensity * ambientLum, cosTheta) * ambientScattFactor;
+			float attenuation = beerLambertCloud(cirrusDensity, cosTheta) * densityFactor;
 			float ambientScattering = pow(1.0f - cloudCoverage, 0.5f) * attenuation;
 			ambientIntensity += ambientScattering * occlustion; lightAbsorption += occlustion;
 			distanceSum += cirrusT * occlustion;
@@ -357,7 +356,7 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 				lightDensity += calcCirrusDensity(data, shapeData, coverage);
 			}
 
-			const float directScattFactor = 0.1f;
+			const float directScattFactor = 0.5f;
 			float lightTransmittance = beerLambertCloud(lightDensity * directScattFactor, cosTheta);
 			directIntensity += lightTransmittance * hgScattering * occlustion;
 		}
@@ -384,7 +383,7 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 	float3 starTransmittance = getTransmittance(transLUT, Ray(cloudWorldPos, 
 		clouds.starDir), clouds.groundRadius, clouds.atmTopRadius);
 	float3 directLight = clouds.starColor * (starTransmittance * directIntensity);
-	float3 ambientLight = clouds.ambientLight * ambientIntensity;
+	float3 ambientLight = clouds.ambientLight * ambientIntensity * (1.0f / densityFactor);
 	float3 lightEnergy = directLight + ambientLight;
 	#ifdef USE_CAMERA_VOLUME
 	float4 ap = getAerialPerspLuminance(cameraVolume, clouds.texCoords, length(cloudCamPos));
