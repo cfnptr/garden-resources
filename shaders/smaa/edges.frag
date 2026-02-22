@@ -19,11 +19,6 @@
 spec const float THRESHOLD = 0.05f;
 #define LOCAL_CONTRAST_ADAPTATION_FACTOR 2.0f
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 in noperspective float4 fs.offset0;
 in noperspective float4 fs.offset1;

@@ -19,11 +19,6 @@
 
 spec const uint32 STEP_COUNT = 4;
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.ao;
 

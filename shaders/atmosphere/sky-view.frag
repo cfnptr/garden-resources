@@ -27,11 +27,6 @@ spec const float RAY_MARCH_SPP_DIST = 150.0f;
 #include "common/constants.gsl"
 #include "atmosphere/common.gsl"
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
 

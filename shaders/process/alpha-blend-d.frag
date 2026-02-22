@@ -14,7 +14,6 @@
 
 pipelineState
 {
-	faceCulling = off;
 	blending0 = on;
 	depthTesting = on;
 	depthCompare = greaterOrEqual;

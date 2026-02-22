@@ -39,8 +39,7 @@ shared uint32 histogramShared[WG_LOCAL_SIZE];
 uint32 colorToBin(float3 hdrColor, float minLogLum, float invLogLumRange)
 {
 	float lum = calcLum(hdrColor);
-	if (lum < 0.005f)
-		return 0;
+	if (lum < 0.005f) return 0;
 	float logLum = saturate((log2(lum) - minLogLum) * invLogLumRange);
 	return uint32(fma(logLum, 254.0f, 1.0f));
 }

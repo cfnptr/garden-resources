@@ -19,11 +19,6 @@
 // Can go a low as 10 samples but energy loss starts to be visible.
 spec const float SAMPLE_COUNT = 10.0f;
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.trans;
 

@@ -27,16 +27,9 @@ spec const bool USE_AO_BUFFER = false;
 spec const bool USE_REFLECTION_BUFFER = false;
 spec const bool USE_REFLECTION_BLUR = false;
 spec const bool USE_GI_BUFFER = false;
-spec const bool USE_CLEAR_COAT_BUFFER = false;
-spec const bool USE_EMISSION_BUFFER = false;
 
 #include "common/pbr.gsl"
 #include "common/depth.gsl"
-
-pipelineState
-{
-	faceCulling = off;
-}
 
 in noperspective float2 fs.texCoords;
 out float4 fb.hdr;
@@ -45,7 +38,6 @@ uniform sampler2D g0;
 uniform sampler2D g1;
 uniform sampler2D g2;
 uniform sampler2D g3;
-uniform sampler2D g4;
 
 uniform sampler2D depthBuffer;
 uniform sampler2D shadBuffer;
@@ -86,18 +78,17 @@ void main()
 	if (depth == FAR_PLANE_DEPTH)
 		discard;
 
-	GBufferValues gBuffer = decodeGBufferValues(g0, g1, g2, g3, g4, g0, fs.texCoords);
-	gBuffer.emissiveFactor *= pc.emissiveCoeff;
-	gBuffer.reflectance *= pc.reflectanceCoeff;
+	GBufferValues gBuffer = decodeGBufferValues(g0, g1, g2, g3, fs.texCoords);
+	gBuffer.emissiveColor.a *= pc.emissiveCoeff; gBuffer.reflectance *= pc.reflectanceCoeff;
 	
-	gBuffer.shadow.rgb = pc.shadowColor.rgb;
+	gBuffer.shadowColor.rgb = pc.shadowColor.rgb;
 	if (USE_SHADOW_BUFFER)
 	{
 		float4 accumShadow = textureLod(shadBuffer, fs.texCoords, 0.0f);
-		gBuffer.shadow.rgb *= accumShadow.rgb;
-		gBuffer.shadow.a = min(gBuffer.shadow.a, accumShadow.a);
+		gBuffer.shadowColor.rgb *= accumShadow.rgb;
+		gBuffer.shadowColor.a = min(gBuffer.shadowColor.a, accumShadow.a);
 	}
-	gBuffer.shadow.rgb *= lerp(pc.shadowColor.a, 1.0f, gBuffer.shadow.a);
+	gBuffer.shadowColor.rgb *= lerp(pc.shadowColor.a, 1.0f, gBuffer.shadowColor.a);
 
 	float4 worldPosition = pc.uvToWorld * float4(fs.texCoords, depth, 1.0f);
 	worldPosition.xyz /= worldPosition.w;

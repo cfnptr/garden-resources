@@ -18,16 +18,13 @@
 
 pipelineState
 {
-	faceCulling = off;
 	depthTesting = on;
 	depthCompare = greaterOrEqual;
 
+	// Note: should match G-Buffer!
 	colorMask0 = none;
 	colorMask1 = none;
 	colorMask2 = none;
-	colorMask3 = none;
-	colorMask4 = none;
-	// Note: should match G-Buffer!
 }
 
 in noperspective float2 fs.currNdcPos;
@@ -36,8 +33,6 @@ out float4 fb.g0;
 out float4 fb.g1;
 out float4 fb.g2;
 out float4 fb.g3;
-out float4 fb.g4;
-out float4 fb.g5;
 
 uniform CommonConstants
 {
@@ -50,5 +45,5 @@ void main()
 	float4 prevNdcPos = cc.prevViewProj * float4(normalize(currWorldPos), 0.0f);
 	float2 velocity = calcVelocity(fs.currNdcPos, prevNdcPos.xy / 
 		prevNdcPos.w, cc.jitterOffset, cc.prevJitterOffset);
-	fb.g5 = encodeGBuffer5(velocity);
+	fb.g3 = float4(velocity, float2(0.0f));
 }

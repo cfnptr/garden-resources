@@ -21,12 +21,12 @@
 #define G_BUFFER_DRAW_MODE_DEPTH_BUFFER 3
 #define G_BUFFER_DRAW_MODE_NORMAL_BUFFER 4
 #define G_BUFFER_DRAW_MODE_REFLECTION_BUFFER 5
-#define G_BUFFER_DRAW_MODE_GLOBAL_SHADOW_COLOR 6
-#define G_BUFFER_DRAW_MODE_GLOBAL_SHADOW_ALPHA 7
-#define G_BUFFER_DRAW_MODE_GLOBAL_AO 8
+#define G_BUFFER_DRAW_MODE_SHADOW_COLOR 6
+#define G_BUFFER_DRAW_MODE_SHADOW_ALPHA 7
+#define G_BUFFER_DRAW_MODE_AO_BUFFER 8
 #define G_BUFFER_DRAW_MODE_GI_BUFFER 9
-#define G_BUFFER_DRAW_MODE_OIT_ACCUM_COLOR 10
-#define G_BUFFER_DRAW_MODE_OIT_ACCUM_ALPHA 11
+#define G_BUFFER_DRAW_MODE_OIT_COLOR 10
+#define G_BUFFER_DRAW_MODE_OIT_ALPHA 11
 #define G_BUFFER_DRAW_MODE_OIT_REVEAL 12
 
 #define G_BUFFER_DRAW_MODE_BASE_COLOR 13
@@ -36,34 +36,28 @@
 #define G_BUFFER_DRAW_MODE_MATERIAL_AO 17
 #define G_BUFFER_DRAW_MODE_REFLECTANCE 18
 #define G_BUFFER_DRAW_MODE_MATERIAL_SHADOW 19
-#define G_BUFFER_DRAW_MODE_EMISSIVE_COLOR 20
-#define G_BUFFER_DRAW_MODE_EMISSIVE_FACTOR 21
-#define G_BUFFER_DRAW_MODE_CC_ROUGHNESS 22
-#define G_BUFFER_DRAW_MODE_CC_NORMAL 23
-#define G_BUFFER_DRAW_MODE_VELOCITY 24
-#define G_BUFFER_DRAW_MODE_DISOCCLUSION 25
+#define G_BUFFER_DRAW_MODE_VELOCITY 20
+#define G_BUFFER_DRAW_MODE_DISOCCLUSION 21
 
-#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_COLOR 26
-#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_SHADOW_ALPHA 27
-#define G_BUFFER_DRAW_MODE_GLOBAL_BLURED_AO 28
-#define G_BUFFER_DRAW_MODE_WORLD_POSITION 29
-#define G_BUFFER_DRAW_MODE_HDR_LUMA 30
-#define G_BUFFER_DRAW_MODE_COUNT 31
+#define G_BUFFER_DRAW_MODE_BLURED_SHADOW_COLOR 22
+#define G_BUFFER_DRAW_MODE_BLURED_SHADOW_ALPHA 23
+#define G_BUFFER_DRAW_MODE_BLURED_AO 24
+#define G_BUFFER_DRAW_MODE_WORLD_POSITION 25
+#define G_BUFFER_DRAW_MODE_HDR_LUMA 26
+#define G_BUFFER_DRAW_MODE_COUNT 27
 
 #ifdef __GARDEN__
 static const char* G_BUFFER_DRAW_MODE_NAMES[G_BUFFER_DRAW_MODE_COUNT] =
 {
 	"Off", "Lighting Debug", "HDR Buffer", "Depth Buffer", "Normal Buffer", 
-	"Reflection Buffer", "Global Shadow Color", "Global Shadow Alpha", "Global AO", 
-	"GI Buffer", "OIT Accum Color", "OI Accum Alpha", "OIT Revealage", 
+	"Reflection Buffer", "Shadow Color", "Shadow Alpha", "AO Buffer", 
+	"GI Buffer", "OIT Color", "OIT Alpha", "OIT Revealage", 
 
 	"Base Color", "Specular Factor", "Metallic", "Roughness", "Material AO", 
-	"Reflectance", "Material Shadow", "Emissive Color", "Emissive Factor", 
-	"Clear Coat Roughness", "Clear Coat Normal", "Velocity", "Disocclusion",
-	
+	"Reflectance", "Material Shadow", "Velocity", "Disocclusion",
 
-	"Global Blured Shadow Color", "Global Blured Shadow Alpha", 
-	"Global Blured AO", "World Position", "HDR Luma"
+	"Blured Shadow Color", "Blured Shadow Alpha", 
+	"Blured AO", "World Position", "HDR Luma"
 };
 #endif
 

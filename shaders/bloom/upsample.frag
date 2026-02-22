@@ -14,7 +14,6 @@
 
 pipelineState
 {
-	faceCulling = off;
 	blending0 = on;
 	srcColorFactor0 = one;
 	dstColorFactor0 = one;

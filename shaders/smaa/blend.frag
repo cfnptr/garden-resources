@@ -14,11 +14,6 @@
 
 // Based on this: https://github.com/iryoku/smaa/blob/master/SMAA.hlsl
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 in noperspective float4 fs.offset;
 

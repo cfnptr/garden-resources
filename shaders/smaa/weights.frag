@@ -26,11 +26,6 @@ spec const int32 CORNER_ROUNDING = 25;
 #define SEARCH_LUT_PACKED_SIZE float2(64.0f, 16.0f)
 #define CORNER_ROUNDING_NORM (float(CORNER_ROUNDING) / 100.0)
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 in noperspective float2 fs.pixCoords;
 in noperspective float4 fs.offset0;

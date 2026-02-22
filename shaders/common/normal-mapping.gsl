@@ -97,16 +97,16 @@ float3x3 fastApproximateTBN(float3 normal) // Branchless ONB (Duff et al. Orthon
 }
 
 float3x3 tbnToTangentSpace(float3x3 tbn) { return transpose(tbn); }
-float3 tbnGetTangent(float3x3 tbn) { return tbn[0]; }
-float3 tbnGetBitangent(float3x3 tbn) { return tbn[1]; }
-float3 tbnGetNormal(float3x3 tbn) { return tbn[2]; }
+float3 getTbnTangent(float3x3 tbn) { return tbn[0]; }
+float3 getTbnBitangent(float3x3 tbn) { return tbn[1]; }
+float3 getTbnNormal(float3x3 tbn) { return tbn[2]; }
 
 half3x3 tbnToTangentSpace(half3x3 tbn) { return transpose(tbn); }
-half3 tbnGetTangent(half3x3 tbn) { return tbn[0]; }
-half3 tbnGetBitangent(half3x3 tbn) { return tbn[1]; }
-half3 tbnGetNormal(half3x3 tbn) { return tbn[2]; }
+half3 getTbnTangent(half3x3 tbn) { return tbn[0]; }
+half3 getTbnBitangent(half3x3 tbn) { return tbn[1]; }
+half3 getTbnNormal(half3x3 tbn) { return tbn[2]; }
 
-float3 snapNormal(float3 normal)
+float3 snapToAxis(float3 normal)
 {
 	float3 a = abs(normal);
 	return a.x > a.y && a.x > a.z ? float3(sign(normal.x), 0.0f, 0.0f) : (a.y > a.z ? 

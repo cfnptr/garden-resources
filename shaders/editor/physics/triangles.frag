@@ -18,7 +18,7 @@ pipelineState
 	depthTesting = on;
 	depthWriting = on;
 	depthCompare = greaterOrEqual;
-	faceCulling = off;
+	cullFace = none;
 }
 
 in float3 fs.color;

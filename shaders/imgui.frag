@@ -14,8 +14,8 @@
 
 pipelineState
 {
-	faceCulling = off;
 	blending0 = on;
+	cullFace = none;
 }
 
 in float4 fs.color;

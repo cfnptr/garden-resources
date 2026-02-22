@@ -17,7 +17,7 @@ pipelineState
 	topology = lineList;
 	depthTesting = on;
 	depthWriting = on;
-	faceCulling = off;
+	cullFace = none;
 }
 
 uniform pushConstants

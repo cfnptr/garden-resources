@@ -18,11 +18,6 @@ spec const uint32 KERNEL_RADIUS = 3;
 #define BLUR_SIGMA (KERNEL_RADIUS / 2.0f)
 #define BLUR_FALLOFF ((1.0f / (-2.0f * BLUR_SIGMA * BLUR_SIGMA)))
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.data;
 

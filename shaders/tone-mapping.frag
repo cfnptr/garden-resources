@@ -23,11 +23,6 @@ spec const bool USE_LIGHT_ABSORPTION = true;
 #include "common/constants.gsl"
 #include "common/tone-mapping.gsl"
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 uniform pushConstants
 {
 	uint32 frameIndex;

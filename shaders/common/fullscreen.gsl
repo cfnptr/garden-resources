@@ -17,7 +17,7 @@
 
 float2 toFullscreenTexCoords(int32 vertexIndex)
 {
-	return float2((vertexIndex << 1) & 2, vertexIndex & 2);
+	return float2(vertexIndex & 2, (vertexIndex << 1) & 2);
 }
 float3 toFullscreenPosition(float2 texCoords)
 {

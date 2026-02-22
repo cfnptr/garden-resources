@@ -21,11 +21,6 @@ spec const float KM_PER_SLICE = 12.0f;
 #include "clouds/common.gsl"
 #include "common/constants.gsl"
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
 

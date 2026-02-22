@@ -19,7 +19,6 @@
 
 pipelineState
 {
-	faceCulling = off;
 	blending0 = on;
 }
 

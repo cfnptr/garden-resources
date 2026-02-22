@@ -18,11 +18,6 @@
 #variantCount 2
 spec const uint32 COEFF_COUNT = 0;
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.data;
 

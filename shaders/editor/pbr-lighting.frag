@@ -18,48 +18,41 @@
 #define USE_CLEAR_COAT
 #define USE_LIGHT_EMISSION
 
-spec const bool USE_CLEAR_COAT_BUFFER = false;
-spec const bool USE_EMISSION_BUFFER = false;
-
 #include "common/gbuffer.gsl"
 
 pipelineState
 {
-	faceCulling = off;
+	// Note: should match G-Buffer!
 	colorMask2 = r;
-	colorMask3 = r;
+	colorMask3 = none;
 }
 
 out float4 fb.g0;
 out float4 fb.g1;
 out float4 fb.g2;
 out float4 fb.g3;
-out float4 fb.g4;
-out float4 fb.g5;
 
 uniform pushConstants
 {
 	float3 baseColor;
 	float specularFactor;
 	float4 mraor;
-	float3 emissiveColor;
-	float emissiveFactor;
-	float shadow;
-	float ccRoughness;
+	float shadowAlpha;
+	uint32 materialID;
 } pc;
 
 void main()
 {
 	GBufferValues gBuffer = gBufferValuesDefault();
-	gBuffer.baseColor = pc.baseColor;
+	gBuffer.materialID = pc.materialID;
+	gBuffer.baseColor = float4(pc.baseColor, 1.0f);
 	gBuffer.specularFactor = pc.specularFactor;
 	gBuffer.metallic = pc.mraor.r;
 	gBuffer.roughness = pc.mraor.g;
 	gBuffer.ambientOcclusion = pc.mraor.b;
 	gBuffer.reflectance = pc.mraor.a;
-	gBuffer.shadow.a = pc.shadow;
-	gBuffer.clearCoatRoughness = pc.ccRoughness;
-	gBuffer.emissiveColor = pc.emissiveColor;
-	gBuffer.emissiveFactor = pc.emissiveFactor;
+	gBuffer.shadowColor.a = pc.shadowAlpha;
+	gBuffer.clearCoatRoughness = pc.mraor.b;
+	gBuffer.emissiveColor = float4(pc.baseColor, pc.mraor.b);
 	ENCODE_G_BUFFER_VALUES(gBuffer);
 }

@@ -15,11 +15,6 @@
 #include "common/depth.gsl"
 #include "common/gbuffer.gsl"
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.disoccl;
 

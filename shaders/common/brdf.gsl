@@ -141,6 +141,7 @@ float3 computeReflectedVector(float linearRoughness, float3 normal, float3 refle
 {
 	return lerp(reflected, normal, linearRoughness * linearRoughness);
 }
+float clampNov(float nov) { return clamp(nov, 1e-4f, 1.0f); }
 
 //**********************************************************************************************************************
 float iblRoughnessOneLevel(samplerCube iblSpecular)

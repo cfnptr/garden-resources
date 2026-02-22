@@ -293,20 +293,21 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 			float occlustion = cloudDensity * (1.0f - lightAbsorption);
 			float attenuation = beerLambertCloud(cloudDensity, cosTheta);
 			float ambientScattering = pow(1.0f - dimProfile, 0.5f) * attenuation;
-			ambientIntensity += ambientScattering * occlustion; lightAbsorption += occlustion;
-			distanceSum += rayT.x * occlustion;
+			ambientIntensity = fma(ambientScattering, occlustion, ambientIntensity); 
+			distanceSum = fma(rayT.x, occlustion, distanceSum);
+			lightAbsorption += occlustion;
 
-			float lightDensity = 0.0f, lightStep = 0.006f;
+			float lightDensity = 0.0f, lightStepSize = 0.006f;
 			for (uint32 step = 0; step < 10; step++) // 256 meters with 10 samples
 			{
-				samplePos = fma(clouds.starDir, float3(lightStep), samplePos);
+				samplePos = fma(clouds.starDir, float3(lightStepSize), samplePos);
 				float3 data = sampleDataFields(dataFields, clouds.cameraPos, samplePos, fieldWindDir, 0.02f);
 				float height = calcRelativeHeight(clouds.bottomRadius, clouds.cumulusCoverage, samplePos, invThickness);
 				float profile = calcVerticalProfile(vertProfile, clouds.temperatureDiff, 
 					data, height) * calcCloudCovergage(clouds.cumulusCoverage, data);
 				lightDensity = fma(calcCloudDensity(noiseShape, clouds.cameraPos, 
-					samplePos, data, profile, shapeWindDir), lightStep, lightDensity);
-				lightStep += lightStep * 1.3f;
+					samplePos, data, profile, shapeWindDir), lightStepSize, lightDensity);
+				lightStepSize = fma(lightStepSize, 1.3f, lightStepSize);
 			}
 
 			lightDensity *= densityFactor * 10.0f; // 10 samples
@@ -314,7 +315,7 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 			float multiscattering = calcMultiscattering(hgMultiScatt, stepSize, cloudData, 
 				relativeHeight, cloudCoverage, dimProfile, lightTransmittance);
 			float directScattering = fma(lightTransmittance, hgScattering, multiscattering);
-			directIntensity += directScattering * occlustion;
+			directIntensity = fma(directScattering, occlustion, directIntensity);
 		}
 		else if (!fastMarching)
 		{
@@ -342,14 +343,16 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 			float occlustion = cirrusDensity * (1.0f - lightAbsorption);
 			float attenuation = beerLambertCloud(cirrusDensity, cosTheta) * densityFactor;
 			float ambientScattering = pow(1.0f - cloudCoverage, 0.5f) * attenuation;
-			ambientIntensity += ambientScattering * occlustion; lightAbsorption += occlustion;
-			distanceSum += cirrusT * occlustion;
+			ambientIntensity = fma(ambientScattering, occlustion, ambientIntensity);
+			distanceSum = fma(cirrusT, occlustion, distanceSum);
+			lightAbsorption += occlustion;
 
-			const float lightStep = 25.0f; // Based on the prev lightStep of 0.006f
+			const float lightStepSize = 25.0f; // Based on the prev lightStep of 0.006f
 			float lightDensity = 0.0f;
+
 			for (uint32 step = 0; step < 4; step++)
 			{
-				samplePos = fma(clouds.starDir, float3(lightStep), samplePos);
+				samplePos = fma(clouds.starDir, float3(lightStepSize), samplePos);
 				float3 data = sampleDataFields(dataFields, clouds.cameraPos, samplePos, fieldWindDir, 0.025f);
 				float3 shapeData = sampleCirrusShape(cirrusShape, clouds.cameraPos, samplePos, shapeWindDir);
 				float coverage = calcCloudCovergage(clouds.cirrusCoverage, data);
@@ -358,7 +361,7 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 
 			const float directScattFactor = 0.5f;
 			float lightTransmittance = beerLambertCloud(lightDensity * directScattFactor, cosTheta);
-			directIntensity += lightTransmittance * hgScattering * occlustion;
+			directIntensity = fma(lightTransmittance * hgScattering, occlustion, directIntensity);
 		}
 	}
 	lightAbsorption = min(lightAbsorption, 1.0f);

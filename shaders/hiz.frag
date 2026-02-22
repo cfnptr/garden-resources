@@ -17,11 +17,6 @@
 
 #variantCount 2
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 uniform sampler2D srcBuffer;
 out float4 fb.minMax;
 

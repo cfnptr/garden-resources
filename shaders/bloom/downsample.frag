@@ -19,11 +19,6 @@ spec const bool USE_THRESHOLD = false;
 #include "bloom/common.gsl"
 #include "bloom/variants.h"
 
-pipelineState
-{
-	faceCulling = off;
-}
-
 in noperspective float2 fs.texCoords;
 out float4 fb.color;
 
