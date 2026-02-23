@@ -45,7 +45,7 @@ struct IblTerms
 };
 
 //**********************************************************************************************************************
-IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, half4x4 shDiffuse[3]
+IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT
 	#ifndef USE_DIFFUSE_ONLY
 	, samplerCube iblSpecular
 	#endif
@@ -78,19 +78,9 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, half4x4 shDi
 	}
 	#endif
 
-	#ifdef USE_LIGHT_SHADOW
-	float4 shadowColor = gBuffer.shadowColor;
-	#else
-	const float4 shadowColor = float4(1.0f);
-	#endif
-
 	#ifndef USE_SPECULAR_ONLY
-	float3 irradiance = diffuseIrradiance(gBuffer.normal, shDiffuse);
-		#ifdef USE_GLOBAL_ILLUMINATION
-		irradiance = lerp(gBuffer.giColor, irradiance, shadowColor.a);
-		#endif
 	float3 diffuseColor = computeDiffuseColor(gBuffer.baseColor.rgb, gBuffer.metallic);
-	terms.fd = diffuseColor * (1.0f - terms.e) * irradiance * shadowColor.rgb * lambert();
+	terms.fd = diffuseColor * (1.0f - terms.e) * gBuffer.irradiance * lambert();
 	#endif
 
 	#if defined(USE_SUBSURFACE_SCATTERING) && !defined(USE_SPECULAR_ONLY)
@@ -106,37 +96,40 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT, half4x4 shDi
 
 	/// TODO: evaluateSheenIBL();
 
-	#ifdef USE_CLEAR_COAT
-	if ((gBuffer.materialID & G_MATERIAL_CLEAR_COAT) != 0)
-	{
-		float clearCoatNov = clampNov(dot(gBuffer.clearCoatNormal, -gBuffer.viewDirection));
-		float fc = schlick(clearCoatNov, 1.0f, 0.04f);
-		float attenuation = 1.0f - fc;
-		#ifndef USE_SPECULAR_ONLY
-		//terms.fd *= attenuation;
-		#endif
-		
-		#ifndef USE_DIFFUSE_ONLY
-		float3 clearCoatRefl = reflect(gBuffer.viewDirection, gBuffer.clearCoatNormal);
-		float3 fr = prefilteredRadiance(iblSpecular, clearCoatRefl, gBuffer.clearCoatRoughness) * fc;
-		terms.fr = fma(terms.fr, float3(attenuation), fr);
-		#endif
-    }
-	else if ((gBuffer.materialID & G_MATERIAL_EMISSIVE) == 0)
-	#endif
-
 	#ifdef USE_AMBIENT_OCCLUSION
-	{
-		float specularAO = specularAoLagarde(nov, gBuffer.ambientOcclusion, linearRoughness);
+	float specularAO = specularAoLagarde(nov, gBuffer.ambientOcclusion, linearRoughness);
 		#ifndef USE_SPECULAR_ONLY
 		terms.fd *= gtaoMultiBounce(gBuffer.ambientOcclusion, diffuseColor);
 		#endif
 		#ifndef USE_DIFFUSE_ONLY
 		terms.fr *= gtaoMultiBounce(specularAO, f0);
 		#endif
-	}
-	#else
-	{ }
+	#endif
+
+	#ifdef USE_CLEAR_COAT
+	if ((gBuffer.materialID & G_MATERIAL_CLEAR_COAT) != 0)
+	{
+		float clearCoatNov = clampNov(dot(gBuffer.clearCoatNormal, -gBuffer.viewDirection));
+		float fc = schlick(clearCoatNov, 0.04f, 1.0f) * gBuffer.clearCoat;
+
+		float attenuation = 1.0f - fc;
+		#ifndef USE_SPECULAR_ONLY
+		terms.fd *= attenuation;
+		#endif
+		
+		#ifndef USE_DIFFUSE_ONLY
+			#ifdef USE_AMBIENT_OCCLUSION
+			float ccRoughness = unpackRoughness(max(gBuffer.clearCoatRoughness, MIN_ROUGHNESS));
+			float specularAO = specularAoLagarde(clearCoatNov, gBuffer.ambientOcclusion, ccRoughness);
+			#else
+			const float specularAO = 1.0f;
+			#endif
+		float3 clearCoatRefl = reflect(gBuffer.viewDirection, gBuffer.clearCoatNormal);
+		float3 fr = prefilteredRadiance(iblSpecular, clearCoatRefl, 
+			gBuffer.clearCoatRoughness) * (fc * specularAO);
+		terms.fr = fma(terms.fr, float3(attenuation), fr);
+		#endif
+    }
 	#endif
 
 	#ifdef USE_LIGHT_EMISSION

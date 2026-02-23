@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "common/depth.gsl"
-#include "common/gbuffer.gsl"
 
 in noperspective float2 fs.texCoords;
 out float4 fb.disoccl;
@@ -35,7 +34,7 @@ void main()
 {
 	float predDepth = calcLinearDepthIRZ(textureLod(prevDepthBuffer, fs.texCoords, 0.0f).x, pc.nearPlane);
 	float currDepth = calcLinearDepthIRZ(textureLod(currDepthBuffer, fs.texCoords, 0.0f).x, pc.nearPlane);
-	float2 velocity = decodeVelocity(textureLod(gVelocity, fs.texCoords, 0.0f));
+	float2 velocity = textureLod(gVelocity, fs.texCoords, 0.0f).xy;
 	float threshold = (pc.threshold * TO_ONE_DEPTH(currDepth)) + (length(velocity) * pc.velFactor);
 	fb.disoccl = float4(abs(predDepth - currDepth) > threshold ? 1.0f : 0.0f, float3(0.0f));
 }

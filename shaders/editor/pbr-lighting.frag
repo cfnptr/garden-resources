@@ -14,7 +14,7 @@
 
 #define USE_SPECULAR_FACTOR
 #define USE_AMBIENT_OCCLUSION
-#define USE_LIGHT_SHADOW
+#define USE_SHADOW_ALPHA
 #define USE_CLEAR_COAT
 #define USE_LIGHT_EMISSION
 
@@ -38,6 +38,9 @@ uniform pushConstants
 	float specularFactor;
 	float4 mraor;
 	float shadowAlpha;
+	float emissiveFactor;
+	float clearCoat;
+	float clearCoatRoughness;
 	uint32 materialID;
 } pc;
 
@@ -51,8 +54,9 @@ void main()
 	gBuffer.roughness = pc.mraor.g;
 	gBuffer.ambientOcclusion = pc.mraor.b;
 	gBuffer.reflectance = pc.mraor.a;
-	gBuffer.shadowColor.a = pc.shadowAlpha;
-	gBuffer.clearCoatRoughness = pc.mraor.b;
-	gBuffer.emissiveColor = float4(pc.baseColor, pc.mraor.b);
+	gBuffer.shadowAlpha = pc.shadowAlpha;
+	gBuffer.clearCoat = pc.clearCoat;
+	gBuffer.clearCoatRoughness = pc.clearCoatRoughness;
+	gBuffer.emissiveColor = float4(pc.baseColor, pc.emissiveFactor);
 	ENCODE_G_BUFFER_VALUES(gBuffer);
 }

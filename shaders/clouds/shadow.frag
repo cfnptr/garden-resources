@@ -19,8 +19,9 @@
 pipelineState
 {
 	blending0 = on;
-	srcAlphaFactor0 = dstAlpha;
 	colorMask0 = a;
+	alphaOperation0 = minimum;
+	blendFactor0 = one;
 }
 
 in noperspective float2 fs.texCoords;

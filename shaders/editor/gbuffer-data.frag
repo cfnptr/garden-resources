@@ -14,7 +14,7 @@
 
 #define USE_SPECULAR_FACTOR
 #define USE_AMBIENT_OCCLUSION
-#define USE_LIGHT_SHADOW
+#define USE_SHADOW_ALPHA
 #define USE_LIGHT_EMISSION
 #define USE_MOTION_VECTORS
 #define USE_VELOCITY_BUFFER true
@@ -94,7 +94,7 @@ void main()
 	if (gsl.variant == G_BUFFER_DRAW_MODE_REFLECTANCE)
 		fb.color = float4(float3(gBuffer.reflectance), 1.0f);
 	if (gsl.variant == G_BUFFER_DRAW_MODE_MATERIAL_SHADOW)
-		fb.color = float4(float3(gBuffer.shadowColor.a), 1.0f);
+		fb.color = float4(float3(gBuffer.shadowAlpha), 1.0f);
 	if (gsl.variant == G_BUFFER_DRAW_MODE_VELOCITY)
 		fb.color = float4(abs(gBuffer.velocity), float2(0.0f));
 	if (gsl.variant == G_BUFFER_DRAW_MODE_DISOCCLUSION)

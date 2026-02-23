@@ -16,11 +16,10 @@
 
 #define USE_SPECULAR_FACTOR
 #define USE_AMBIENT_OCCLUSION
-#define USE_LIGHT_SHADOW
+#define USE_SHADOW_ALPHA
 #define USE_CLEAR_COAT
 #define USE_LIGHT_EMISSION
 #define USE_REFLECTIONS
-#define USE_GLOBAL_ILLUMINATION
 
 spec const bool USE_SHADOW_BUFFER = false;
 spec const bool USE_AO_BUFFER = false;
@@ -80,15 +79,23 @@ void main()
 
 	GBufferValues gBuffer = decodeGBufferValues(g0, g1, g2, g3, fs.texCoords);
 	gBuffer.emissiveColor.a *= pc.emissiveCoeff; gBuffer.reflectance *= pc.reflectanceCoeff;
-	
-	gBuffer.shadowColor.rgb = pc.shadowColor.rgb;
-	if (USE_SHADOW_BUFFER)
+
+	if (USE_GI_BUFFER)
 	{
-		float4 accumShadow = textureLod(shadBuffer, fs.texCoords, 0.0f);
-		gBuffer.shadowColor.rgb *= accumShadow.rgb;
-		gBuffer.shadowColor.a = min(gBuffer.shadowColor.a, accumShadow.a);
+		gBuffer.irradiance = textureLod(giBuffer, fs.texCoords, 0.0f).rgb;
 	}
-	gBuffer.shadowColor.rgb *= lerp(pc.shadowColor.a, 1.0f, gBuffer.shadowColor.a);
+	else
+	{
+		float3 shadowColor = pc.shadowColor.rgb;
+		if (USE_SHADOW_BUFFER)
+		{
+			float4 accumShadow = textureLod(shadBuffer, fs.texCoords, 0.0f);
+			shadowColor *= accumShadow.rgb; gBuffer.shadowAlpha = min(gBuffer.shadowAlpha, accumShadow.a);
+		}
+		shadowColor *= lerp(pc.shadowColor.a, 1.0f, gBuffer.shadowAlpha);
+
+		gBuffer.irradiance = diffuseIrradiance(gBuffer.normal, sh.diffuse) * shadowColor;
+	}
 
 	float4 worldPosition = pc.uvToWorld * float4(fs.texCoords, depth, 1.0f);
 	worldPosition.xyz /= worldPosition.w;
@@ -105,10 +112,7 @@ void main()
 		gBuffer.reflectionColor = textureLod(reflBuffer, fs.texCoords, lod);
 	}
 
-	if (USE_GI_BUFFER)
-		gBuffer.giColor = textureLod(giBuffer, fs.texCoords, 0.0f).rgb;
-
 	gBuffer.viewDirection = calcViewDirection(worldPosition.xyz);
-	IblTerms terms = evaluateIBL(gBuffer, dfgLUT, sh.diffuse, specular);
+	IblTerms terms = evaluateIBL(gBuffer, dfgLUT, specular);
 	fb.hdr = float4(terms.fd + terms.fr + terms.fe, 1.0f);
 }
