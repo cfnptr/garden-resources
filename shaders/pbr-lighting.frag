@@ -30,6 +30,15 @@ spec const bool USE_GI_BUFFER = false;
 #include "common/pbr.gsl"
 #include "common/depth.gsl"
 
+pipelineState
+{
+	stencilTesting = on;
+	stencilCompare = equal;
+	stencilWriteMask = 0x00;
+	stencilCompareMask = 0x01;
+	stencilReference = 0x01;
+}
+
 in noperspective float2 fs.texCoords;
 out float4 fb.hdr;
 
@@ -73,10 +82,6 @@ uniform pushConstants
 //**********************************************************************************************************************
 void main()
 {
-	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
-	if (depth == FAR_PLANE_DEPTH)
-		discard;
-
 	GBufferValues gBuffer = decodeGBufferValues(g0, g1, g2, g3, fs.texCoords);
 	gBuffer.emissiveColor.a *= pc.emissiveCoeff; gBuffer.reflectance *= pc.reflectanceCoeff;
 
@@ -97,6 +102,7 @@ void main()
 		gBuffer.irradiance = diffuseIrradiance(gBuffer.normal, sh.diffuse) * shadowColor;
 	}
 
+	float depth = textureLod(depthBuffer, fs.texCoords, 0.0f).x;
 	float4 worldPosition = pc.uvToWorld * float4(fs.texCoords, depth, 1.0f);
 	worldPosition.xyz /= worldPosition.w;
 

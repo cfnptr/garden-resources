@@ -64,6 +64,6 @@ void main()
 	float3 samplePos = fma(pc.starDir, float3(rayT.x < 0.0f ? rayT.y : rayT.x), pc.cameraPos);
 	float3 fieldWindDir = calcFieldWindDir(pc.windDir, pc.currentTime);
 	float3 cloudData = sampleDataFields(dataFields, pc.cameraPos, samplePos, fieldWindDir, 0.02f);
-	float shadow = 1.0f - calcCloudCovergage(pc.cumulusCoverage, cloudData) * pc.temperatureDiff;
+	float shadow = 1.0f - calcCloudCoverage(pc.cumulusCoverage, cloudData) * pc.temperatureDiff;
 	fb.shadow = float4(float3(1.0f), saturate(pow(shadow, 8.0f)));
 }

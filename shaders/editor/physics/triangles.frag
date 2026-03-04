@@ -14,7 +14,7 @@
 
 pipelineState
 {
-	polygon = line;
+	polygonMode = line;
 	depthTesting = on;
 	depthWriting = on;
 	depthCompare = greaterOrEqual;

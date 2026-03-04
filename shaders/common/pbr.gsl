@@ -109,6 +109,7 @@ IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT
 	#ifdef USE_CLEAR_COAT
 	if ((gBuffer.materialID & G_MATERIAL_CLEAR_COAT) != 0)
 	{
+		// The clear coat layer assumes an IOR of 1.5 (4% reflectance)
 		float clearCoatNov = clampNov(dot(gBuffer.clearCoatNormal, -gBuffer.viewDirection));
 		float fc = schlick(clearCoatNov, 0.04f, 1.0f) * gBuffer.clearCoat;
 
