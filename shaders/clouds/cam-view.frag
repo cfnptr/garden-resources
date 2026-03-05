@@ -32,6 +32,10 @@ uniform sampler2D
 {
 	filter = linear;
 } camView;
+uniform sampler2D
+{
+	filter = linear;
+} camViewDepth;
 
 uniform sampler2D disocclMap;
 uniform sampler2D hizBuffer;
@@ -112,7 +116,7 @@ void main()
 	clouds.temperatureDiff = pc.temperatureDiff;
 	clouds.stepSizeFactor = STEP_SIZE_FACTOR;
 
-	float depth; evaluateClouds(transLUT, cameraVolume, dataFields, vertProfile, 
-		noiseShape, cirrusShape, clouds, fb.color, camView, disocclMap, hizBuffer, depth);
+	float depth; evaluateClouds(transLUT, cameraVolume, dataFields, vertProfile, noiseShape, 
+		cirrusShape, clouds, fb.color, camView, camViewDepth, disocclMap, hizBuffer, depth);
 	fb.depth = float4(depth, float3(0.0f));
 }

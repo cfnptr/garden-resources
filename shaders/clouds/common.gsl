@@ -185,7 +185,7 @@ float calcMultiScattering(float hgMultiScatt, float stepSize, float3 cloudData,
 void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFields, sampler2D vertProfile, 
 	sampler3D noiseShape, sampler2D cirrusShape, const CloudsParams clouds, out float4 color
 	#ifdef USE_CLOUDS_REPROJECTION
-	, sampler2D camView, sampler2D disocclMap
+	, sampler2D camView, sampler2D camViewDepth, sampler2D disocclMap
 	#endif
 	#ifdef USE_CLOUDS_DEPTH
 	, sampler2D hizBuffer, out float depth
@@ -244,7 +244,7 @@ void evaluateClouds(sampler2D transLUT, sampler3D cameraVolume, sampler2D dataFi
 		{
 			color = textureLod(camView, prevTexCoords, 0.0f);
 			#ifdef USE_CLOUDS_DEPTH
-			depth = 0.0; // TODO: also reproject the depth.
+			depth = textureLod(camViewDepth, prevTexCoords, 0.0f).x;
 			#endif
 			return;
 		}
