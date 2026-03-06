@@ -27,6 +27,9 @@ pipelineState
 	blending1 = on;
 	srcBlendFactor1 = zero;
 	dstBlendFactor1 = oneMinusSrcColor;
+	stencilTesting = on;
+	stencilPass = replace;
+	stencilReference = 0x02;
 }
 
 uniform pushConstants

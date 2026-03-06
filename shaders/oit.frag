@@ -20,6 +20,11 @@
 pipelineState
 {
 	blending0 = on;
+	stencilTesting = on;
+	stencilCompare = equal;
+	stencilWriteMask = 0x00;
+	stencilCompareMask = 0x02;
+	stencilReference = 0x02;
 }
 
 in noperspective float2 fs.texCoords;
