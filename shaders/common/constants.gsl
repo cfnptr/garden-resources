@@ -26,23 +26,23 @@
 	float4 shadowColor;      \
 	float3 cameraPos;        \
 	float nearPlane;         \
-	float3 giBufferPos;      \
-	float currentTime;       \
 	float3 viewDir;          \
-	float deltaTime;         \
+	float currentTime;       \
 	float3 lightDir;         \
+	float deltaTime;         \
+	float3 windDir;          \
 	float emissiveCoeff;     \
-	float3 starLight;        \
-	float anglePerPixel;     \
-	float3 ambientLight;     \
-	float mipLodBias;        \
 	float3 upDir;            \
+	float anglePerPixel;     \
+	float3 starLight;        \
+	float mipLodBias;        \
+	float3 ambientLight;     \
 	float ggxLodOffset;      \
 	float2 frameSize;        \
 	float2 invFrameSize;     \
 	float2 invFrameSizeSq;   \
 	float2 jitterOffset;     \
 	float2 prevJitterOffset; \
-	float3 windDir;
+	float3 giBufferPos;
 
 #endif // CONSTANTS_GSL

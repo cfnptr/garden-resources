@@ -174,7 +174,7 @@ float4 encodeGBuffer2(GBufferValues gBuffer)
 	#else
 	float reflectance = gBuffer.reflectance;
 	#endif
-	float3 encodedNormal = encodeNormalOct(gBuffer.normal);
+	float3 encodedNormal = encodeNormalOct3(gBuffer.normal);
 	return float4(reflectance, encodedNormal.x, encodedNormal.y, encodedNormal.z);
 }
 float4 encodeGBuffer3(GBufferValues gBuffer)
@@ -206,7 +206,7 @@ float4 decodeBaseColor(float4 data) { return float4(data.rgb, 1.0f); }
 uint32 decodeMaterialID(float4 data) { return uint32(fma(data.a, 255.0f, 0.5f)); }
 float decodeMetallic(float4 data) { return data.r; }
 float decodeRoughness(float4 data) { return data.g; }
-float3 decodeNormal(float4 data) { return decodeNormalOct(data.gba); }
+float3 decodeNormal(float4 data) { return decodeNormalOct3(data.gba); }
 
 float decodeAmbientOcclusion(float4 data, uint32 materialID)
 {

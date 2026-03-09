@@ -37,36 +37,42 @@ float3 unpackNormal3x10(uint32 packed)
 // Signed Octahedron Normal Encoding (R10G10B10A2)
 // https://johnwhite3d.blogspot.com/2017/10/signed-octahedron-normal-encoding.html
 
-float3 encodeNormalOct(float3 normal)
+float3 projectNormToOctXY(float3 normal)
 {
-	normal = normalize(normal);
-	normal /= (abs(normal.x) + abs(normal.y) + abs(normal.z));
+	normal.xy /= (abs(normal.x) + abs(normal.y) + abs(normal.z));
+	return normal;
+}
+float2 wrapNormOct(float2 normal)
+{
+	return (1.0f - abs(normal.yx)) * float2(normal.x >= 0.0f ? 1.0f : -1.0f, normal.y >= 0.0f ? 1.0f : -1.0f);
+}
+
+float2 encodeNormalOct2(float3 normal) // [result in -1.0 - 1.0 range]
+{
+	normal = projectNormToOctXY(normalize(normal));
+	return normal.z >= 0.0f ? normal.xy : wrapNormOct(normal.xy);
+}
+float3 decodeNormalOct2(float2 encoded)
+{
+	float z = 1.0f - abs(encoded.x) - abs(encoded.y);
+	return normalize(float3(z >= 0.0f ? encoded.xy : wrapNormOct(encoded.xy), z));
+}
+
+float3 encodeNormalOct3(float3 normal) // [result in 0.0 - 1.0 range]
+{
+	normal = projectNormToOctXY(normalize(normal));
 	float y = fma(normal.y, 0.5f, 0.5f);
 	float x = fma(normal.x, 0.5f, y);
 	y = fma(normal.x, -0.5f, y);
 	float z = saturate(normal.z * FLOAT32_MAX);
 	return float3(x, y, z);
 }
-float3 decodeNormalOct(float3 encoded)
+float3 decodeNormalOct3(float3 encoded)
 {
-	float3 normal;
-	normal.x = (encoded.x - encoded.y);
-	normal.y = (encoded.x + encoded.y) - 1.0f;
-	normal.z = fma(encoded.z, 2.0f, -1.0f);
-	normal.z = normal.z * (1.0f - abs(normal.x) - abs(normal.y));
+	float3 normal = float3(encoded.x - encoded.y, 
+		encoded.x + encoded.y - 1.0f, fma(encoded.z, 2.0f, -1.0f));
+	normal.z *= 1.0f - abs(normal.x) - abs(normal.y);
 	return normalize(normal);
-}
-
-uint32 encodeNormalOct32(float3 normal)
-{
-	float3 encoded = encodeNormalOct(normal);
-	uint2 xy = uint2(fma(saturate(encoded.xy), float2(32767.0f), float2(0.5f)));
-	return (xy.x << 30u) | (xy.y << 15u) | uint32(encoded.z);
-}
-float3 decodeNormalOct32(uint32 encoded)
-{
-	float2 xy = float2(uint2(encoded >> 30u, encoded >> 15u) & 32767u) * float(1.0 / 32767.0);
-	return decodeNormalOct(float3(xy.x, xy.y, float(encoded & 1)));
 }
 
 //**********************************************************************************************************************

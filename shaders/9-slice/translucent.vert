@@ -25,7 +25,7 @@ uniform pushConstants
 
 buffer readonly Instance
 {
-	InstanceData data[];
+	NineSliceInstanceData data[];
 } instance;
 
 void main()

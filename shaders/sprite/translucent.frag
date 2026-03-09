@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "sprite/common.gsl"
+#include "sprite/instance-data.h"
 
 pipelineState
 {
@@ -30,7 +30,7 @@ uniform pushConstants
 
 buffer readonly Instance
 {
-	InstanceData data[];
+	BaseInstanceData data[];
 } instance;
 
 uniform set1 sampler2DArray
@@ -41,7 +41,7 @@ uniform set1 sampler2DArray
 
 void main()
 {
-	InstanceData instance = instance.data[pc.instanceIndex];
+	BaseInstanceData instance = instance.data[pc.instanceIndex];
 	float3 texCoords = float3(fma(fs.texCoords, 
 		instance.uvSize, instance.uvOffset), pc.colorMapLayer);
 	fb.color = texture(colorMap, texCoords) * instance.color;

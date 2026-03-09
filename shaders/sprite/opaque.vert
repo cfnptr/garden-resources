@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "sprite/common.gsl"
 #include "common/primitives.gsl"
+#include "sprite/instance-data.h"
 
 out float2 fs.texCoords;
 
@@ -25,7 +25,7 @@ uniform pushConstants
 
 buffer readonly Instance
 {
-	InstanceData data[];
+	BaseInstanceData data[];
 } instance;
 
 void main()

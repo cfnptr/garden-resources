@@ -33,12 +33,13 @@
 #define M_SQRT1_2   0.707106781186547524400844362104849039 // 1 / sqrt(2)
 #define M_SQRT_PI   1.77245385090551602729816748334114518  // sqrt(pi)
 
-#define FLOAT_EPS3     0.001f
-#define FLOAT_EPS6     0.000001f
-#define FLOAT_EPS9     0.000000001f
-#define FLOAT_SMALL_16 0.00006103515625f
-#define FLOAT_BIG_16   65504.0f
-#define FLOAT_SMALL_24 (1.0f / 16777216.0f)
+#define INFINITY       (1.0 / 0.0)
+#define FLOAT_EPS3     0.001
+#define FLOAT_EPS6     0.000001
+#define FLOAT_EPS9     0.000000001
+#define FLOAT_SMALL_16 0.00006103515625
+#define FLOAT_BIG_16   65504.0
+#define FLOAT_SMALL_24 (1.0 / 16777216.0)
 
 #define FLOAT32_MAX  3.402823466e+38f
 #define FLOAT32_MIN  1.175494351e-38f
@@ -93,7 +94,33 @@ float atan2(float y, float x) // C++ atan2 implementation.
 {
 	return abs(x) > abs(y) ? atan(y, x) : float(M_PI_2) - atan(x, y);
 }
+float atan2Fast(float y, float x)
+{
+	float x1 = min(abs(y), abs(x)) / max(abs(y), abs(x)); float x2 = x1 * x1;
+	float r = fma(x2, 0.0872929f, -0.301895f); r = fma(r, x2, 1.0f) * x1;
+	r = abs(y) > abs(x) ? float(M_PI_2) - r : r;
+	r = x < 0.0f ? float(M_PI) - r : r; r = y < 0.0f ? -r : r;
+	return r;
+}
 
+float atanFastPos(float angle) // Max absolute error: 0.0013 [from 0.0 to inf]
+{ 
+	float x1 = angle < 1.0f ? angle : 1.0f / angle; float x2 = x1 * x1;
+	float r = fma(x2, 0.0872929f, -0.301895f); r = fma(r, x2, 1.0f) * x1;
+	return angle < 1.0f ? r : float(M_PI_2) - r;
+}
+float atanFast(float angle) // [from -inf to inf]
+{
+	float x1 = atanFastPos(abs(angle));
+	return angle < 0.0f ? -x1 : x1;
+}
+
+float acosFast(float angle) // Max absolute error: 0.009
+{
+	float x1 = abs(angle);
+	float r = fma(x1, -0.156583f, float(M_PI_2)) * sqrt(1.0f - x1);
+	return (angle >= 0.0f) ? r : float(M_PI) - r;
+}
 float acosFast4(float angle) // 0.00007 radians precision
 {
 	float x1 = abs(angle); float x2 = x1 * x1; float x3 = x2 * x1;
@@ -101,6 +128,8 @@ float acosFast4(float angle) // 0.00007 radians precision
 	r = fma(x3, -0.0187293f, r); r = sqrt(1.0f - x1) * r;
 	return angle < 0.0f ? float(M_PI) - r : r;
 }
+
+float asinFast(float angle) { return float(M_PI_2) - acosFast(angle); }
 float asinFast4(float angle) { return float(M_PI_2) - acosFast4(angle); }
 
 #endif // MATH_GSL

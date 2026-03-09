@@ -30,7 +30,7 @@ uniform pushConstants
 
 buffer readonly Instance
 {
-	InstanceData data[];
+	NineSliceInstanceData data[];
 } instance;
 
 uniform set1 sampler2DArray
@@ -41,7 +41,7 @@ uniform set1 sampler2DArray
 
 void main()
 {
-	InstanceData instance = instance.data[pc.instanceIndex];
+	NineSliceInstanceData instance = instance.data[pc.instanceIndex];
 	float3 texCoords = float3(fma(fs.texCoords, instance.uvSize, instance.uvOffset), pc.colorMapLayer);
 	texCoords.x = mapAxis(texCoords.x, instance.textureBorder.x, instance.windowBorder.x);
 	texCoords.y = mapAxis(texCoords.y, instance.textureBorder.y, instance.windowBorder.y);

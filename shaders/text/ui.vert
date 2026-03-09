@@ -27,12 +27,12 @@ uniform pushConstants
 
 buffer readonly Instance
 {
-	InstanceData data[];
+	TextInstanceData data[];
 } instance;
 
 void main()
 {
-	InstanceData instance = instance.data[gl.instanceIndex];
+	TextInstanceData instance = instance.data[gl.instanceIndex];
 	float4 position = instance.position * textVertPosMuls[gl.vertexIndex];
 	gl.position = pc.mvp * float4(position.xy + position.zw, 0.0f, 1.0f);
 	float4 texCoords = instance.texCoords * textTexCoordMuls[gl.vertexIndex];

@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPRITE_GSL
-#define SPRITE_GSL
+#ifndef MODEL_INSTANCE_DATA_H
+#define MODEL_INSTANCE_DATA_H
 
-struct InstanceData
+#include "garden/math.h"
+
+struct BaseInstanceData
 {
 	float4x4 mvp;
 	float4 color;
-	float2 uvSize;
-	float2 uvOffset;
 };
 
-#endif // SPRITE_GSL
+#endif // MODEL_INSTANCE_DATA_H

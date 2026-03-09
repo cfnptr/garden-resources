@@ -99,11 +99,11 @@ void main()
 		fb.color = float4(abs(gBuffer.velocity), float2(0.0f));
 	if (gsl.variant == G_BUFFER_DRAW_MODE_DISOCCLUSION)
 		fb.color = float4(float3(textureLod(disocclMap, fs.texCoords, 0.0f).x), 1.0f);
-	if (gsl.variant == G_BUFFER_DRAW_MODE_BLURED_SHADOW_COLOR)
+	if (gsl.variant == G_BUFFER_DRAW_MODE_BLURRED_SHADOW_COLOR)
 		fb.color = float4(textureLod(shadBlurBuffer, fs.texCoords, 0.0f).rgb, 1.0f);
-	if (gsl.variant == G_BUFFER_DRAW_MODE_BLURED_SHADOW_ALPHA)
+	if (gsl.variant == G_BUFFER_DRAW_MODE_BLURRED_SHADOW_ALPHA)
 		fb.color = float4(float3(textureLod(shadBlurBuffer, fs.texCoords, 0.0f).a), 1.0f);
-	if (gsl.variant == G_BUFFER_DRAW_MODE_BLURED_AO)
+	if (gsl.variant == G_BUFFER_DRAW_MODE_BLURRED_AO)
 		fb.color = float4(float3(textureLod(aoBlurBuffer, fs.texCoords, 0.0f).x), 1.0f);
 	if (gsl.variant == G_BUFFER_DRAW_MODE_HDR_LUMA)
 		fb.color = float4(float3(rgbToLuma(textureLod(hdrBuffer, fs.texCoords, 0.0f).rgb)), 1.0f);

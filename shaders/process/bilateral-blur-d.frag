@@ -22,7 +22,6 @@ in noperspective float2 fs.texCoords;
 out float4 fb.data;
 
 uniform sampler2D srcBuffer;
-
 uniform sampler2D depthBuffer;
 
 uniform pushConstants

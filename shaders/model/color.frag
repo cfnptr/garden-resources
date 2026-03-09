@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "model/instance-data.h"
+
 pipelineState
 {
 	depthTesting = on;
@@ -25,14 +27,9 @@ uniform pushConstants
 	uint32 instanceIndex;
 } pc;
 
-struct InstanceData
-{
-	float4x4 mvp;
-	float4 color;
-};
 buffer readonly Instance
 {
-	InstanceData data[];
+	BaseInstanceData data[];
 } instance;
 
 void main()

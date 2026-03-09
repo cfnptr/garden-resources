@@ -50,11 +50,11 @@ uniform sampler2D g3;
 uniform sampler2D depthBuffer;
 uniform sampler2D shadBuffer;
 uniform sampler2D aoBuffer;
+uniform sampler2D giBuffer;
 uniform sampler2D
 {
 	filterMipmap = linear;
 } reflBuffer;
-uniform sampler2D giBuffer;
 
 uniform sampler2D
 {
@@ -119,6 +119,6 @@ void main()
 	}
 
 	gBuffer.viewDirection = calcViewDirection(worldPosition.xyz);
-	IblTerms terms = evaluateIBL(gBuffer, dfgLUT, specular);
+	BrdfTerms terms = evaluateBRDF(gBuffer, dfgLUT, specular);
 	fb.hdr = float4(terms.fd + terms.fr + terms.fe, 1.0f);
 }

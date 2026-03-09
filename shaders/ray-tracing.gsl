@@ -61,4 +61,12 @@
 #define ignoreIntersection ignoreIntersectionEXT
 #define executeCallable executeCallableEXT
 
+#ifndef RAY_QUERY_GSL
+float2 calcRayTexCoords()
+{
+	const float2 texelSize = 1.0f / float2(gl_LaunchSize.xy);
+	return (float2(gl_LaunchID.xy) + 0.5f) * texelSize;
+}
+#endif
+
 #endif // RAY_TRACING_GSL

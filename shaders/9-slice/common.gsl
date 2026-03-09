@@ -16,16 +16,7 @@
 #define _9_SLICE_GSL
 
 #include "common/remap.gsl"
-
-struct InstanceData
-{
-	float4x4 mvp;
-	float4 color;
-	float2 uvSize;
-	float2 uvOffset;
-	float2 textureBorder;
-	float2 windowBorder;
-};
+#include "9-slice/instance-data.h"
 
 float mapAxis(float coord, float textureBorder, float windowBorder)
 {

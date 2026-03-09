@@ -30,7 +30,7 @@
 #include "common/light.gsl"
 #include "common/gbuffer.gsl"
 
-struct IblTerms
+struct BrdfTerms
 {
 	float3 e;
 	#ifndef USE_SPECULAR_ONLY
@@ -45,13 +45,13 @@ struct IblTerms
 };
 
 //**********************************************************************************************************************
-IblTerms evaluateIBL(const GBufferValues gBuffer, sampler2D dfgLUT
+BrdfTerms evaluateBRDF(const GBufferValues gBuffer, sampler2D dfgLUT
 	#ifndef USE_DIFFUSE_ONLY
 	, samplerCube iblSpecular
 	#endif
 	)
 {
-	IblTerms terms;
+	BrdfTerms terms;
 	float perceptualRoughness = max(gBuffer.roughness, MIN_ROUGHNESS);
 	float linearRoughness = unpackRoughness(perceptualRoughness);
 	float nov = clampNov(dot(gBuffer.normal, -gBuffer.viewDirection));

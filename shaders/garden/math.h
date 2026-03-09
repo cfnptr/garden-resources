@@ -12,32 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "sprite/instance-data.h"
+#ifdef __GARDEN__
+#include "math/color.hpp"
+#include "math/matrix.hpp"
 
-in float2 fs.texCoords;
-out float4 fb.color;
-
-uniform pushConstants
-{
-	uint32 instanceIndex;
-	float colorMapLayer;
-} pc;
-
-buffer readonly Instance
-{
-	BaseInstanceData data[];
-} instance;
-
-uniform set1 sampler2DArray
-{
-	addressMode = repeat;
-	filter = linear;
-} colorMap;
-
-void main()
-{
-	BaseInstanceData instance = instance.data[pc.instanceIndex];
-	float3 texCoords = float3(fma(fs.texCoords, 
-		instance.uvSize, instance.uvOffset), pc.colorMapLayer);
-	fb.color = texture(colorMap, texCoords) * instance.color;
-}
+using namespace math;
+#endif

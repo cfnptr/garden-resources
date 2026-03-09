@@ -48,6 +48,17 @@ float3 calcWorldPositionSafe(float depth, float2 texCoords, float4x4 invViewProj
 	return position.xyz / max(position.w, FLOAT_SMALL_24);
 }
 
+float3 calcRayOrigin(float2 texCoords, float depth, float4x4 uvToWorld)
+{
+	float4 position = uvToWorld * float4(texCoords, depth, 1.0f);
+	return position.xyz / position.w;
+}
+float3 calcRayOriginSafe(float2 texCoords, float depth, float4x4 uvToWorld)
+{
+	float4 position = uvToWorld * float4(texCoords, depth, 1.0f);
+	return position.xyz / max(position.w, FLOAT_SMALL_24);
+}
+
 float calcDepth(float3 worldPos, float4x4 viewProj)
 {
 	float4 clipPos = viewProj * float4(worldPos, 1.0f);

@@ -87,31 +87,32 @@ float3 xyyToRgb(float3 xyy) { return xyzToRgb(xyyToXyz(xyy)); }
 // Linear sRGB <-> LogLuv
 const float3x3 rgbToLogLuvMat = float3x3
 (
-	float3(0.2209f, 0.3390f, 0.4184f),
-	float3(0.1138f, 0.6780f, 0.7319f),
-	float3(0.0102f, 0.1130f, 0.2969f)
+	float3(0.1832848040f, 0.2126390040f, 0.252131164f),
+	float3(0.1589263680f, 0.7151686540f, 0.788274765f),
+	float3(0.0802136883f, 0.0721923187f, 0.283475161f)
 );
 const float3x3 logLuvToRgbMat = float3x3
 (
-	float3( 6.0014f, -2.7008f, -1.7996f),
-	float3(-1.3320f,  3.1029f, -5.7721f),
-	float3( 0.3008f, -1.0882f,  5.6268f)
+	float3( 7.666140550f, -2.211964610f, -0.667561352f),
+	float3( 0.955670714f,  1.668192390f, -5.488834380f),
+	float3(-2.412632940f,  0.201072842f,  5.114378450f)
 );
 
-ushort2 rgbToLogLuv(float3 rgb)
+uint32 rgbToLogLuv(float3 rgb)
 {
 	float3 luv = max(rgbToLogLuvMat * rgb, float3(1e-6f));
-	ushort2 logLuv = ushort2(packUnorm2x8(luv.xy / luv.z), 
-		uint16(fma(log2(luv.y), float(1.0 / 64.0), 0.5f) * 65535.0f));
-	return dot(rgb, rgb) > 0.0f ? logLuv : ushort2(0);
+	uint2 uv = uint2(fma(saturate(luv.xy / luv.z), float2(511.0f), float2(0.5f)));
+	uint32 le = uint32(fma(saturate(fma(log2(luv.y), 
+		(1.0f / 40.0f), 0.5f)), 16383.0f, 0.5f));
+	uint32 logLuv = (uv.y << 23u) | (uv.x << 14u) | le;
+	return dot(rgb, rgb) > 0.0f ? logLuv : 0;
 }
-float3 logLuvToRgb(ushort2 logLuv)
+float3 logLuvToRgb(uint32 logLuv)
 {
-	float3 luv; float2 uv = unpackUnorm2x8(logLuv.x);
-	luv.y = exp2(fma(float(logLuv.y), float(1.0 / 65535.0) * 64.0f, -32.0f));
+	float3 luv; float2 uv = float2(uint2(logLuv >> 14u, logLuv >> 23u) & 511u) * (1.0f / 511.0f);
+	luv.y = exp2(fma(logLuv & 16383u, 40.0f / 16383.0f, -20.0f));
 	luv.z = luv.y / uv.y; luv.x = luv.z * uv.x;
-	float3 rgb = max(logLuvToRgbMat * luv, float3(0.0f));
-	return all(equal(logLuv, ushort2(0))) ? float3(0.0f) : rgb;
+	return logLuv > 0 ? max(logLuvToRgbMat * luv, float3(0.0f)) : float3(0.0f);
 }
 
 #endif // COLOR_SPACE_GSL

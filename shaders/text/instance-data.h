@@ -12,32 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "sprite/instance-data.h"
+#ifndef TEXT_INSTANCE_DATA_H
+#define TEXT_INSTANCE_DATA_H
 
-in float2 fs.texCoords;
-out float4 fb.color;
+#include "garden/math.h"
 
-uniform pushConstants
+struct TextInstanceData
 {
-	uint32 instanceIndex;
-	float colorMapLayer;
-} pc;
+	float4 position;
+	float4 texCoords;
+	uint32 atlasIndex;
+	Color srgbColor;
+};
 
-buffer readonly Instance
-{
-	BaseInstanceData data[];
-} instance;
-
-uniform set1 sampler2DArray
-{
-	addressMode = repeat;
-	filter = linear;
-} colorMap;
-
-void main()
-{
-	BaseInstanceData instance = instance.data[pc.instanceIndex];
-	float3 texCoords = float3(fma(fs.texCoords, 
-		instance.uvSize, instance.uvOffset), pc.colorMapLayer);
-	fb.color = texture(colorMap, texCoords) * instance.color;
-}
+#endif // TEXT_INSTANCE_DATA_H

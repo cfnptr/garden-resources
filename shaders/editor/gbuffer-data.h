@@ -39,9 +39,9 @@
 #define G_BUFFER_DRAW_MODE_VELOCITY 20
 #define G_BUFFER_DRAW_MODE_DISOCCLUSION 21
 
-#define G_BUFFER_DRAW_MODE_BLURED_SHADOW_COLOR 22
-#define G_BUFFER_DRAW_MODE_BLURED_SHADOW_ALPHA 23
-#define G_BUFFER_DRAW_MODE_BLURED_AO 24
+#define G_BUFFER_DRAW_MODE_BLURRED_SHADOW_COLOR 22
+#define G_BUFFER_DRAW_MODE_BLURRED_SHADOW_ALPHA 23
+#define G_BUFFER_DRAW_MODE_BLURRED_AO 24
 #define G_BUFFER_DRAW_MODE_WORLD_POSITION 25
 #define G_BUFFER_DRAW_MODE_HDR_LUMA 26
 #define G_BUFFER_DRAW_MODE_COUNT 27
@@ -56,8 +56,8 @@ static const char* G_BUFFER_DRAW_MODE_NAMES[G_BUFFER_DRAW_MODE_COUNT] =
 	"Base Color", "Specular Factor", "Metallic", "Roughness", "Material AO", 
 	"Reflectance", "Material Shadow", "Velocity", "Disocclusion",
 
-	"Blured Shadow Color", "Blured Shadow Alpha", 
-	"Blured AO", "World Position", "HDR Luma"
+	"Blurred Shadow Color", "Blurred Shadow Alpha", 
+	"Blurred AO", "World Position", "HDR Luma"
 };
 #endif
 
