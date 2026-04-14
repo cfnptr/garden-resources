@@ -89,7 +89,7 @@ void main()
 			float3 shSum = shShared[i];
 #ifdef GL_KHR_shader_subgroup_arithmetic
 			for (uint32 j = 1; j < SG_SHARED_SIZE; j++)
-				shSum += float(shShared[j * SG_SHARED_SIZE + i]);
+				shSum += shShared[j * SH3_COUNT + i];
 #endif
 			sh.cache[index + i] = float4(shSum, 0.0f);
 		}
