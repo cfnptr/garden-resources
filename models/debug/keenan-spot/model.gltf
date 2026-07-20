@@ -55,8 +55,8 @@
 	"images":[
 		{
 			"mimeType":"image/png",
-			"name":"keenan-spot",
-			"uri":"keenan-spot.png"
+			"name":"texture",
+			"uri":"texture.png"
 		}
 	],
 	"accessors":[
